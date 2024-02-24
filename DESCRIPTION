@@ -1,0 +1,13 @@
+Package: mig
+Type: Package
+Title: Multivariate Inverse Gaussian distribution
+Version: 0.1.0
+Authors@R: c(person(given="Frederic", family="Ouimet", email = "frederic.ouimet.23@gmail.com", role = "aut", comment = c(ORCID = "0000-0001-7933-5265")),
+             person(given="Leo", family="Belzile", role = c("aut", "cre"), email = "belzilel@gmail.com", comment = c(ORCID = "0000-0002-9135-014X")))
+Description: Utilities for the multivariate inverse Gaussian, including kernel density estimation and random number generation
+Imports:
+    statmod
+Encoding: UTF-8
+LazyData: true
+License: MIT + file LICENSE
+RoxygenNote: 7.3.1
