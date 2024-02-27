@@ -2,10 +2,11 @@
 
 export(dmig)
 export(dmig_laplacian)
-export(mig_kdens_optscale)
+export(mig_kdens_bandwidth)
 export(mig_loglik_grad)
 export(mig_loglik_hessian)
 export(mig_loglik_laplacian)
 export(mig_mle)
+export(mig_mom)
 export(rmig)
 export(simEllipt)

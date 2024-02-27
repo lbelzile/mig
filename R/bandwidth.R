@@ -23,8 +23,8 @@ mig_kdens_bandwidth<- function(
       x,
       beta,
       shift,
-      method = c("asymptotic","lcv","rcv"),
-      type = c("isotropic", "heterogeneous","multi"),
+      method = c("asymptotic", "lcv"),
+      type = c("isotropic", "full"),
       N = 1e3L,
       pointwise = NULL){
    method <- match.arg(method)
@@ -67,7 +67,7 @@ mig_kdens_bandwidth<- function(
       mean(xbeta^2 * dmig_laplacian(x = samp, xi = mle$xi, Omega = mle$Omega, beta = beta, scale = FALSE)^2 *
           dmig(x = samp,  xi = mle$xi, Omega = mle$Omega, beta = beta, log = FALSE)))^(2/(d+4))
       return(diag(rep(hopt, d)))
-      } else if(type == "multi"){
+      } else if(type == "full"){
          gradients <- mig_loglik_grad(x = samp, beta = beta, xi = mle$xi, Omega = mle$Omega)
          hessians <- mig_loglik_hessian(x = samp, beta = beta, xi = mle$xi, Omega = mle$Omega)
          logdens <- dmig(x = samp, xi = mle$xi, Omega = mle$Omega, beta = beta, log = TRUE)
@@ -103,13 +103,20 @@ mig_kdens_bandwidth<- function(
          }) - log(n-1))
       }
    if(type == "isotropic"){
-      opt <- nlm(f = objective_function, p = 0.1)
-      if(opt$code %in% c(1,2)){
-         return(diag(d) * opt$estimate^2)
+      opt <- try(nlm(f = objective_function, p = mean(diag(cov(x)))))
+      if(!inherits(opt, "try-error")){
+         convergence <- FALSE
       } else{
+         if(isTRUE(opt$code %in% c(1,2))){
+            return(diag(d) * opt$estimate^2)
+         } else{
+            convergence <- FALSE
+         }
+      }
+      if(!convergence){
          warning("Optimization did not converge")
       }
-      else{
+      } else if(type == "full"){
          optH <- optim(par = rep(0, d*(d+1)/2),
                        fn = optfun,
                        method = "Nelder-Mead",
@@ -117,5 +124,4 @@ mig_kdens_bandwidth<- function(
          return(chol2cov(optH$par, d = d))
       }
     }
-   }
 }
