@@ -7,15 +7,7 @@
 \usage{
 dmig(x, xi, Omega, beta, shift, log = TRUE)
 
-rmig(
-  n,
-  xi,
-  Omega,
-  beta,
-  shift,
-  method = c("invsim", "bm", "reject"),
-  timeinc = 0.001
-)
+rmig(n, xi, Omega, beta, shift, method = c("invsim", "bm"), timeinc = 0.001)
 }
 \arguments{
 \item{x}{\code{n} by \code{d} matrix of quantiles}
@@ -30,7 +22,7 @@ rmig(
 
 \item{n}{number of observations}
 
-\item{method}{string; one of inverse system (\code{invsim}, default), Brownian motion (\code{bm}) or rejection sampling (\code{reject})}
+\item{method}{string; one of inverse system (\code{invsim}, default), Brownian motion (\code{bm})}
 
 \item{timeinc}{time increment for multivariate simulation algorithm based on the hitting time of Brownian motion, default to \code{1e-3}.}
 }
@@ -60,9 +52,9 @@ d <- 5
 beta <- runif(d)
 xi <- rexp(d)
 Omega <- matrix(0.5, d, d) + diag(d)
-samp <- rmig(n = 10000, beta = beta, xi = xi, Omega = Omega)
+samp <- rmig(n = 1000, beta = beta, xi = xi, Omega = Omega)
 mle <- mig_mle(samp, beta = beta)
 }
 \author{
-Frederic Ouimet, Leo Belzile
+Frederic Ouimet (\code{bm}), Leo Belzile (\code{invsim})
 }

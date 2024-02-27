@@ -26,3 +26,4 @@ with location vector \code{mu}, scale matrix \code{sigma} and  \code{df} (intege
 subject to the linear constraint \eqn{\boldsymbol{\beta}^\top\boldsymbol{x} > 0}.
 Negative degrees of freedom or values larger than 1000 imply Gaussian vectors are generated instead
 }
+\keyword{internal}

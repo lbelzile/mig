@@ -20,6 +20,7 @@
 #' xi <- c(1, 1)
 #' Omega <- matrix(c(2, -1, -1, 2), nrow = 2, ncol = 2)
 #' dmig(x, xi = xi, Omega = Omega, beta = beta)
+#' @export
 dmig <- function(x, xi, Omega, beta, shift, log = TRUE){
    # Cast vectors to matrix
    d <- length(xi)
@@ -65,19 +66,20 @@ dmig <- function(x, xi, Omega, beta, shift, log = TRUE){
 #' @param beta \code{d} vector \eqn{\boldsymbol{\beta}} defining the half-space through \eqn{\boldsymbol{\beta}^{\top}\boldsymbol{\xi}>0}
 #' @param shift \code{d} translation for the half-space \eqn{\boldsymbol{a}}
 #' @param timeinc time increment for multivariate simulation algorithm based on the hitting time of Brownian motion, default to \code{1e-3}.
-#' @param method string; one of inverse system (\code{invsim}, default), Brownian motion (\code{bm}) or rejection sampling (\code{reject})
+#' @param method string; one of inverse system (\code{invsim}, default), Brownian motion (\code{bm})
 #' @return for \code{rmig}, an \code{n} vector if \code{d=1} (univariate) or an \code{n} by \code{d} matrix if \code{d > 1}
-#' @author Frederic Ouimet, Leo Belzile
+#' @author Frederic Ouimet (\code{bm}), Leo Belzile (\code{invsim})
 #' @rdname mig
+#' @export
 #' @examples
 #' # Random number generation
 #' d <- 5
 #' beta <- runif(d)
 #' xi <- rexp(d)
 #' Omega <- matrix(0.5, d, d) + diag(d)
-#' samp <- rmig(n = 10000, beta = beta, xi = xi, Omega = Omega)
+#' samp <- rmig(n = 1000, beta = beta, xi = xi, Omega = Omega)
 #' mle <- mig_mle(samp, beta = beta)
-rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm", "reject"),
+rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm"),
                  timeinc = 1e-3){
    method <- match.arg(method)
    n <- as.integer(n[1])
@@ -148,6 +150,7 @@ rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm", "reject")
 #' \item \code{xi}: MLE of the expectation or location vector
 #' \item \code{Omega}: MLE of the scale matrix
 #' }
+#' @export
 mig_mle <- function(x, beta, shift){
    d <- length(beta)
    x <- matrix(x, ncol = d)
@@ -158,11 +161,38 @@ mig_mle <- function(x, beta, shift){
    } else{
       shift <- rep(0, d)
    }
-   xi_hat = colMeans(x)
+   xi_hat <- colMeans(x)
    Omega_hat <- matrix(0, ncol = d, nrow = d)
    for(i in seq_len(n)){
       Omega_hat <- Omega_hat + tcrossprod(x[i,] - xi_hat)/sum(beta*x[i,])
    }
    list(xi = xi_hat + shift,
         Omega = Omega_hat/n)
+}
+
+
+#' Method of moments estimators for multivariate inverse Gaussian vectors
+#'
+#' These estimators are based on the sample mean and covariance.
+#' @inheritParams dmig
+#' @return a list with components:
+#' \itemize{
+#' \item \code{xi}: MOM estimator of the expectation or location vector
+#' \item \code{Omega}: MOM estimator of the scale matrix
+#' }
+#' @export
+mig_mom <- function(x, beta, shift){
+   d <- length(beta)
+   x <- matrix(x, ncol = d)
+   n <- nrow(x)
+   if(!missing(shift)){
+      stopifnot(length(shift) == d)
+      x <- scale(x, center = shift, scale = FALSE)
+   } else{
+      shift <- rep(0, d)
+   }
+   xi_hat <- colMeans(x)
+   Omega_hat <- cov(x)/sum(beta*xi_hat)
+   list(xi = xi_hat + shift,
+        Omega = Omega_hat)
 }

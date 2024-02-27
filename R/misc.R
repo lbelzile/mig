@@ -4,6 +4,7 @@
 #' argument \code{x}.
 #' @inheritParams dmig
 #' @keywords internal
+#' @export
 mig_loglik_grad <- function(x, xi, Omega, beta){
    d <- length(beta)
    x <- matrix(x, ncol = d)
@@ -35,6 +36,7 @@ mig_loglik_grad <- function(x, xi, Omega, beta){
 #' @return a \code{d} by \code{d} matrix of second derivatives if \code{x} has length \code{d},
 #' else an \code{n} by \code{d} by \code{d} array if \code{x} is an \code{n} by \code{d} matrix
 #' @keywords internal
+#' @export
 mig_loglik_hessian <- function(x, beta, xi, Omega){
    d <- length(beta)
    x <- matrix(x, ncol = d)
@@ -68,6 +70,7 @@ mig_loglik_hessian <- function(x, beta, xi, Omega){
 #' @inheritParams dmig
 #' @return an \code{n} vector
 #' @keywords internal
+#' @export
 mig_loglik_laplacian <- function(x, beta, xi, Omega){
    d <- length(beta)
    x <- matrix(x, ncol = d)
@@ -96,6 +99,7 @@ mig_loglik_laplacian <- function(x, beta, xi, Omega){
 #' @inheritParams dmig
 #' @return an \code{n} vector
 #' @keywords internal
+#' @export
 dmig_laplacian <- function(x, xi, Omega, beta, scale = TRUE){
       laplacian <- rowSums(mig_loglik_grad(x = x, xi = xi, Omega = Omega, beta = beta)^2) +
          mig_loglik_laplacian(x = x, xi = xi, Omega = Omega, beta = beta)

@@ -5,6 +5,7 @@ vignette: >
   %\VignetteIndexEntry{mig package}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+bibliography: mig.bib
 ---
 
 ```{r, include = FALSE}
@@ -32,16 +33,14 @@ The `mig` package provides utilities for kernel density estimation for random ve
 \end{align*}
 
 
-The optimal bandwidth matrix, which minimizes the asymptotic mean squared error, depends on the Hessian and Laplacian of the unknown density function with respect to the data.
 
-# Random number generation
+## Random number generation
  
-## Rejection sampling
  
-While Minami (2005) provides a constructive characterization of the inverse Gaussian as the hitting time of a particular hyperplane by a correlated Brownian motion, simulation requires discretization of the latter, and more accurate simulations come at increased costs. We turn instead to rejection sampling, using as proposal densities
+@Minami:2003 provides a constructive characterization of the inverse Gaussian as the hitting time of a particular hyperplane by a correlated Brownian motion, simulation requires discretization of the latter, and more accurate simulations come at increased costs. 
  
 ```{r}
-#| eval: true
+#| eval: false
 #| echo: false
 #| label: fig-penultshape
 #| fig-cap: "Penultimate shape behaviour for the inverse Gaussian margin with $\\xi=1$ and \\Omega=1$."
@@ -60,9 +59,9 @@ plot(penult$qu,
      type = 'l',
      bty = "l")
 ```
-## Composition sampling
 
-Let $\boldsymbol{\beta} \in \mathbb{R}^d$ be the vector defining the halfspace and consider a $(d-1) \times d$ matrix $\mathbf{Q}_2$, such that $\mathbf{Q}_2^\top\boldsymbol{\beta} = \boldsymbol{0}_{d-1}$ and $\mathbf{Q}_2\mathbf{Q}_2^\top = \mathbf{I}_{d-1}$. Theorem 1 (3) of Minami (2003) implies that, for $\mathbf{Q} = (\boldsymbol{\beta}, \mathbf{Q}_2^\top)\vphantom{Q}^{\top}$ and
+
+Let $\boldsymbol{\beta} \in \mathbb{R}^d$ be the vector defining the halfspace and consider a $(d-1) \times d$ matrix $\mathbf{Q}_2$, such that $\mathbf{Q}_2^\top\boldsymbol{\beta} = \boldsymbol{0}_{d-1}$ and $\mathbf{Q}_2\mathbf{Q}_2^\top = \mathbf{I}_{d-1}$. Theorem 1 (3) of @Minami:2003 implies that, for $\mathbf{Q} = (\boldsymbol{\beta}, \mathbf{Q}_2^\top)\vphantom{Q}^{\top}$ and
 \begin{align*} 
 Z_1 &\sim \mathsf{MIG}(\boldsymbol{\beta}^\top\boldsymbol{\xi}, \boldsymbol{\beta}^\top\boldsymbol{\Omega}\boldsymbol{\beta}) \\
 \boldsymbol{Z}_2 \mid Z_1 = z_1 &\sim \mathsf{Norm}_{d-1}\left[\mathbf{Q}_2\{\boldsymbol{\xi} + \boldsymbol{\Omega}\boldsymbol{\beta}/(\boldsymbol{\beta}^\top\boldsymbol{\Omega}\boldsymbol{\beta})(z_1-\boldsymbol{\beta}^\top\boldsymbol{\xi})\}, z_1(\mathbf{Q}_2\boldsymbol{\Omega}^{-1}\mathbf{Q}_2^\top)^{-1}\right],
@@ -106,20 +105,27 @@ max(abs(mle$xi - xi))
 norm(mle$Omega - Omega, type = "f")
 1 - mle$Omega/Omega
 ```
-The gradient of the log density is
+
+## Optimal bandwidth and scale for kernel smoothing
+
+@Ouimet:2024 derives expression for the scale matrix that minimizes the mean integrated squared error as a function of the true density $f$ on the half-space. Replacing the latter by that of the MIG model evaluated at the maximum likelihood estimator, we can obtain explicit expressions which depend on the Hessian and Laplacian of the density function with respect to the data. 
+
+The gradient of the MIG log density is
 \begin{align*}
 \frac{\partial \log f(\boldsymbol{x})}{\partial \boldsymbol{x}} = - \left( \frac{d}{2} + 1\right) \frac{\boldsymbol{\beta}}{\boldsymbol{\beta}^\top\boldsymbol{x}}- \frac{\boldsymbol{\Omega}^{-1}(\boldsymbol{x}-\boldsymbol{\xi})}{\boldsymbol{\beta}^\top\boldsymbol{x}} + 
-\frac{(\boldsymbol{x}-\boldsymbol{\xi})^\top\boldsymbol{\Omega}^{-1}(\boldsymbol{x}-\boldsymbol{\xi})\boldsymbol{\beta}}{2(\boldsymbol{\beta}^\top\boldsymbol{x})^2}
+\frac{(\boldsymbol{x}-\boldsymbol{\xi})^\top\boldsymbol{\Omega}^{-1}(\boldsymbol{x}-\boldsymbol{\xi})\boldsymbol{\beta}}{2(\boldsymbol{\beta}^\top\boldsymbol{x})^2},
 \end{align*}
-and the hessian is
+while the hessian is
 \begin{align*}
 \frac{\partial^2 \log f(\boldsymbol{x})}{\partial \boldsymbol{x}\partial \boldsymbol{x}^\top} = 
 \left( \frac{d}{2} + 1\right) \frac{\boldsymbol{\beta}\boldsymbol{\beta}^\top}{(\boldsymbol{\beta}^\top\boldsymbol{x})^2}- \frac{\boldsymbol{\Omega}^{-1}}{\boldsymbol{\beta}^\top\boldsymbol{x}} + 
 \frac{\boldsymbol{\Omega}^{-1}(\boldsymbol{x}-\boldsymbol{\xi})\boldsymbol{\beta}^\top}{(\boldsymbol{\beta}^\top\boldsymbol{x})^2} +
 \frac{\boldsymbol{\beta}(\boldsymbol{x}-\boldsymbol{\xi})^\top\boldsymbol{\Omega}^{-1}}{(\boldsymbol{\beta}^\top\boldsymbol{x})^2} - \frac{(\boldsymbol{x}-\boldsymbol{\xi})^\top\boldsymbol{\Omega}^{-1}(\boldsymbol{x}-\boldsymbol{\xi}) \boldsymbol{\beta}\boldsymbol{\beta}^\top}{(\boldsymbol{\beta}^\top\boldsymbol{x})^3}.
 \end{align*}
-The hessian of the density is easily derived as
+The hessian of the density is then easily derived as
 \begin{align*}
 \frac{\partial^2}{\partial  \boldsymbol{x}\partial  \boldsymbol{x}^\top} f(\boldsymbol{x}) = f(\boldsymbol{x}) \left[ \frac{\partial }{\partial  \boldsymbol{x}} \log\{f(\boldsymbol{x})\}\frac{\partial }{\partial  \boldsymbol{x}^\top} \log\{f(\boldsymbol{x})\} + \frac{\partial ^2}{\partial  \boldsymbol{x}\partial  \boldsymbol{x}^\top} \log\{f(\boldsymbol{x})\}\right]
 \end{align*}
 and we can express the Laplacian of the density as the sum of the sum of squared gradient entries and the Laplacian of the log likelihood, times the density function. 
+
+## References

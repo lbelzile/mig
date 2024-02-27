@@ -11,6 +11,8 @@
 #' @param sigma scale matrix
 #' @param df degrees of freedom argument
 #' @return an \code{nsim} by \code{d} matrix of random vectors
+#' @export
+#' @keywords internal
 simEllipt <- function(nsim, beta, mu, sigma, df){
    d <- length(beta)
    Amat <- diag(d)
