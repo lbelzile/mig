@@ -10,7 +10,7 @@ mig_kdens_bandwidth(
   shift,
   method = c("asymptotic", "lcv"),
   type = c("isotropic", "full"),
-  N = 1000L,
+  N = 10000L,
   pointwise = NULL
 )
 }

@@ -98,34 +98,12 @@ Z1 <- rmig(n = n, xi = mu, Omega = omega) # uses statmod, with mean = mu and sha
 Z2 <- sweep(TruncatedNormal::rtmvnorm(n = n, mu = rep(0, d-1), sigma = covmat), 1, sqrt(Z1), "*")
 Z2 <- sweep(Z2, 2, c(Q2 %*% xi), "+") + tcrossprod(Z1 - mu, c(Q2 %*% c(Omega %*% beta)/omega))
 # Compute inverse of Q matrix (it is actually invertible)
-samp <- t(MASS::ginv(Qmat) %*% t(cbind(Z1, Z2)))
+samp <- t(solve(Qmat) %*% t(cbind(Z1, Z2)))
 # Check properties
 mle <- mig_mle(samp, beta = beta)
 max(abs(mle$xi - xi))
 norm(mle$Omega - Omega, type = "f")
-1 - mle$Omega/Omega
+max(abs(1 - mle$Omega/Omega))
 ```
-
-## Optimal bandwidth and scale for kernel smoothing
-
-@Ouimet:2024 derives expression for the scale matrix that minimizes the mean integrated squared error as a function of the true density $f$ on the half-space. Replacing the latter by that of the MIG model evaluated at the maximum likelihood estimator, we can obtain explicit expressions which depend on the Hessian and Laplacian of the density function with respect to the data. 
-
-The gradient of the MIG log density is
-\begin{align*}
-\frac{\partial \log f(\boldsymbol{x})}{\partial \boldsymbol{x}} = - \left( \frac{d}{2} + 1\right) \frac{\boldsymbol{\beta}}{\boldsymbol{\beta}^\top\boldsymbol{x}}- \frac{\boldsymbol{\Omega}^{-1}(\boldsymbol{x}-\boldsymbol{\xi})}{\boldsymbol{\beta}^\top\boldsymbol{x}} + 
-\frac{(\boldsymbol{x}-\boldsymbol{\xi})^\top\boldsymbol{\Omega}^{-1}(\boldsymbol{x}-\boldsymbol{\xi})\boldsymbol{\beta}}{2(\boldsymbol{\beta}^\top\boldsymbol{x})^2},
-\end{align*}
-while the hessian is
-\begin{align*}
-\frac{\partial^2 \log f(\boldsymbol{x})}{\partial \boldsymbol{x}\partial \boldsymbol{x}^\top} = 
-\left( \frac{d}{2} + 1\right) \frac{\boldsymbol{\beta}\boldsymbol{\beta}^\top}{(\boldsymbol{\beta}^\top\boldsymbol{x})^2}- \frac{\boldsymbol{\Omega}^{-1}}{\boldsymbol{\beta}^\top\boldsymbol{x}} + 
-\frac{\boldsymbol{\Omega}^{-1}(\boldsymbol{x}-\boldsymbol{\xi})\boldsymbol{\beta}^\top}{(\boldsymbol{\beta}^\top\boldsymbol{x})^2} +
-\frac{\boldsymbol{\beta}(\boldsymbol{x}-\boldsymbol{\xi})^\top\boldsymbol{\Omega}^{-1}}{(\boldsymbol{\beta}^\top\boldsymbol{x})^2} - \frac{(\boldsymbol{x}-\boldsymbol{\xi})^\top\boldsymbol{\Omega}^{-1}(\boldsymbol{x}-\boldsymbol{\xi}) \boldsymbol{\beta}\boldsymbol{\beta}^\top}{(\boldsymbol{\beta}^\top\boldsymbol{x})^3}.
-\end{align*}
-The hessian of the density is then easily derived as
-\begin{align*}
-\frac{\partial^2}{\partial  \boldsymbol{x}\partial  \boldsymbol{x}^\top} f(\boldsymbol{x}) = f(\boldsymbol{x}) \left[ \frac{\partial }{\partial  \boldsymbol{x}} \log\{f(\boldsymbol{x})\}\frac{\partial }{\partial  \boldsymbol{x}^\top} \log\{f(\boldsymbol{x})\} + \frac{\partial ^2}{\partial  \boldsymbol{x}\partial  \boldsymbol{x}^\top} \log\{f(\boldsymbol{x})\}\right]
-\end{align*}
-and we can express the Laplacian of the density as the sum of the sum of squared gradient entries and the Laplacian of the log likelihood, times the density function. 
 
 ## References

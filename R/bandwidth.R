@@ -25,12 +25,13 @@ mig_kdens_bandwidth<- function(
       shift,
       method = c("asymptotic", "lcv"),
       type = c("isotropic", "full"),
-      N = 1e3L,
+      N = 1e4L,
+      # buffer = 0.01,
       pointwise = NULL){
    method <- match.arg(method)
    type <- match.arg(type)
    N <- as.integer(N)
-    stopifnot("\"x\" is not a matrix." ~ is.matrix(x))
+   stopifnot(isTRUE(is.matrix(x)))
    d <- length(beta)
    x <- as.matrix(x, ncol = d)
    n <- nrow(x)
@@ -47,7 +48,7 @@ mig_kdens_bandwidth<- function(
       diag(chol) <- exp(pars[1:d])
       chol[lower.tri(chol, diag = FALSE)] <- pars[-(1:d)]
       chol <- t(chol)
-      tcrossprod(chol)
+      crossprod(chol)
    }
    if(method == "asymptotic"){
       # Compute maximum likelihood estimate
@@ -61,7 +62,11 @@ mig_kdens_bandwidth<- function(
          samp <- rmig(n = N, xi = mle$xi, Omega = mle$Omega, beta = beta)
       }
       xbeta <- c(samp %*% beta)
-      int1 <- mean((4*pi*xbeta)^(-d/2))
+      logxbeta <- log(xbeta)
+      # Integral blows up near the boundary
+      # samp <- samp[xbeta > buffer,,drop = FALSE]
+      # xbeta <- xbeta[xbeta > buffer]
+      int1 <- exp(-(d/2)*log(4*pi) + .lsum((-d/2)*logxbeta) - log(N))
       if(type == "isotropic"){
       hopt <-  (d / n * int1 /
       mean(xbeta^2 * dmig_laplacian(x = samp, xi = mle$xi, Omega = mle$Omega, beta = beta, scale = FALSE)^2 *
@@ -71,39 +76,40 @@ mig_kdens_bandwidth<- function(
          gradients <- mig_loglik_grad(x = samp, beta = beta, xi = mle$xi, Omega = mle$Omega)
          hessians <- mig_loglik_hessian(x = samp, beta = beta, xi = mle$xi, Omega = mle$Omega)
          logdens <- dmig(x = samp, xi = mle$xi, Omega = mle$Omega, beta = beta, log = TRUE)
-         logscalefact <- logdens - 2*log(xbeta) - log(4)
+         logscalefact <- logdens + 2*logxbeta
          for(i in seq_len(nrow(gradients))){
             hessians[i,,] <- hessians[i,,] + tcrossprod(gradients[i,])
          }
-
-       start <- rep(0, d*(d+1)/2)
        optfun <- function(pars){
           Hmat <- chol2cov(pars, d = d)
-          exp(-2*sum(pars[1:d]) - log(n))* int1 +
-             mean(exp(2*log(abs(apply(hessians, 1, function(x){sum(Hmat * x)}))) + logscalefact))
+          exp(-sum(abs(pars[1:d])) - log(n))* int1 +
+             mean(exp(2*log(abs(apply(hessians, 1, function(x){sum(Hmat * x)}))) + logscalefact)) - log(4)
 
        }
-       optH <- optim(par = rep(0, d*(d+1)/2),
+       cholOm <- chol(mle$Omega)
+       start <- c(log(diag(cholOm)), cholOm[upper.tri(cholOm, diag = FALSE)])
+        optH <- optim(par = start,#rep(0, d*(d+1)/2),
                      fn = optfun,
-                     method = "Nelder-Mead",
+                     method = "BFGS",
                      control = list(maxit = 1e4L))
        return(chol2cov(optH$par, d = d))
       }
    } else if(method == "lcv"){
-      objective_function <- function(pars){
+      optfun <- function(pars){
          if(length(pars) == 1L){
             Hmat <- pars[1]^2*diag(d)
-         } else{
+         } else if(length(pars) == d*(d+1)/2){
             Hmat <- chol2cov(pars = pars, d = d)
          }
-         -mean(sapply(seq_len(n), function(i){
-            copula:::lsum(dmig(x[-i, ,drop = FALSE],
-                               xi = as.numeric(x[i,]),
-                               Omega = Hmat, beta = beta, log = TRUE))
-         }) - log(n-1))
+         # -mean(sapply(seq_len(n), function(i){
+         #    .lsum(dmig(x[-i, ,drop = FALSE],
+         #                       xi = as.numeric(x[i,]),
+         #                       Omega = Hmat, beta = beta, log = TRUE))
+         # }) - log(n-1))
+         -mig_lcv(x = x, beta = beta, Omega = Hmat)
       }
    if(type == "isotropic"){
-      opt <- try(nlm(f = objective_function, p = mean(diag(cov(x)))))
+      opt <- try(nlm(f = optfun, p = mean(diag(cov(x)))))
       if(!inherits(opt, "try-error")){
          convergence <- FALSE
       } else{
@@ -121,7 +127,33 @@ mig_kdens_bandwidth<- function(
                        fn = optfun,
                        method = "Nelder-Mead",
                        control = list(maxit = 1e4L))
+         if(optH$convergence != 0){
+            warning("Optimization of bandwidth matrix did not converge.")
+         }
          return(chol2cov(optH$par, d = d))
       }
     }
+}
+
+#' Kernel density estimator
+#'
+#' Given a matrix of new observations, compute the density of the multivariate
+#' inverse Gaussian mixture defined by assigning equal weight to each component where
+#' \eqn{\boldsymbol{\xi}} is the location parameter.
+#' @param newdata matrix of new observations at which to evaluated the kernel density
+#' @inheritParams dmig
+#' @return value of the (log)-density at \code{newdata}
+mig_kdens <- function(x, newdata, Omega, beta, log = FALSE){
+   d <- length(beta)
+   newdata <- as.matrix(newdata, ncol = d)
+   x <- matrix(x, ncol = d)
+   valid <- newdata %*% beta > 0
+   logd <- rep(-Inf, nrow(newdata))
+   logd[valid] <- apply(newdata[valid,], 1, function(xi){
+      .lsum(dmig(x = x, beta = beta, Omega = Omega, xi = xi, log = TRUE))}) - log(nrow(x))
+   if(log){
+      return(logd)
+   } else{
+      return(exp(logd))
+   }
 }

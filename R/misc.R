@@ -109,23 +109,60 @@ dmig_laplacian <- function(x, xi, Omega, beta, scale = TRUE){
    return(laplacian)
 }
 
-#
-# set.seed(1234)
-# d <- 5
-# beta <- rexp(d)
-# xi <- rexp(d)
-# Omega <- matrix(0.5, d, d) + diag(d)
-# samp <- rmig(n = 10, xi = xi, beta = beta, Omega = Omega)
-# test <- apply(samp, 1, function(x){
-#    sum(diag(numDeriv::hessian(func = dmig, x = x, xi = xi, Omega = Omega,
-#                               beta = beta, log = FALSE)))})
-# test2 <- dmig_laplacian(x = samp, xi = xi, Omega = Omega, beta = beta)
-#
-# test4 <- array(dim = c(nrow(samp), d, d))
-# for(i in 1:nrow(samp)){
-#  test4[i,,] <- mig_loglik_hessian(x = samp[i,], xi = xi, Omega = Omega, beta = beta)
-# }
-# #    numDeriv::hessian(func = dmig, x = x, xi = xi, Omega = Omega, beta = beta,
-# #                               log = TRUE)
-# test5 <- mig_loglik_hessian(x = samp, beta = beta, xi = xi, Omega = Omega)
-# max(abs(test4/test5 - 1))
+#' Log of sum of terms
+#'
+#' Computes the log of a sum of positive components, given on the log scale (\code{lx}), avoiding numerical overflow.
+#' @param lx vector or matrix of log of terms to add
+#' @param loff log of offset
+#' @keywords internal
+#' @author Marius Hofert, Martin Maechler (package \code{copula})
+#' @return a vector of log sums
+#' @export
+.lsum <- function (lx, l.off) {
+   rx <- length(d <- dim(lx))
+   if (mis.off <- missing(l.off))
+      l.off <- {
+         if (rx <= 1L)
+            max(lx)
+         else if (rx == 2L)
+            apply(lx, 2L, max)
+      }
+   if (rx <= 1L) {
+      if (is.finite(l.off))
+         l.off + log(sum(exp(lx - l.off)))
+      else if (mis.off || is.na(l.off) || l.off == max(lx))
+         l.off
+      else stop("'l.off  is infinite but not == max(.)")
+   }
+   else if (rx == 2L) {
+      if (any(x.off <- !is.finite(l.off))) {
+         if (mis.off || isTRUE(all.equal(l.off, apply(lx,
+                                                      2L, max)))) {
+            if (all(x.off))
+               return(l.off)
+            r <- l.off
+            iok <- which(!x.off)
+            l.of <- l.off[iok]
+            r[iok] <- l.of + log(colSums(exp(lx[, iok, drop = FALSE] -
+                                                rep(l.of, each = d[1]))))
+            r
+         }
+         else stop("'l.off' has non-finite values but differs from default max(.)")
+      }
+      else l.off + log(colSums(exp(lx - rep(l.off, each = d[1]))))
+   }
+   else stop("not yet implemented for arrays of rank >= 3")
+}
+
+
+#' Magnetic storms
+#'
+#' Absolute magnitude of 373 geomagnetic storms lasting more than 48h with absolute magnitude (dst) larger than 100 in 1957-2014.
+#'
+#' @source Aki Vehtari
+#' @references World Data Center for Geomagnetism, Kyoto, M. Nose, T. Iyemori, M. Sugiura, T. Kamei (2015), \emph{Geomagnetic Dst index}, doi:10.17593/14515-74000.
+#' @docType data
+#' @note For a detailed article presenting the derivation of the Dst index, see \code{http://wdc.kugi.kyoto-u.ac.jp/dstdir/dst2/onDstindex.html}
+#' @format a vector of size 373
+#' @name geomagnetic
+NULL

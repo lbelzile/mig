@@ -20,6 +20,8 @@ rmig(n, xi, Omega, beta, shift, method = c("invsim", "bm"), timeinc = 0.001)
 
 \item{shift}{\code{d} translation for the half-space \eqn{\boldsymbol{a}}}
 
+\item{log}{logical; if \code{TRUE}, return the log density}
+
 \item{n}{number of observations}
 
 \item{method}{string; one of inverse system (\code{invsim}, default), Brownian motion (\code{bm})}
@@ -37,8 +39,7 @@ The density of the MIG model is
 for points in the \code{d}-dimensional half-space \eqn{\{\boldsymbol{x} \in \mathbb{R}^d: \boldsymbol{\beta}^{\top}(\boldsymbol{x}-\boldsymbol{a}) \geq 0\}}
 }
 \details{
-Observations are generated using the representation as the first hitting time of a hyperplane
-for a correlated Brownian motion.
+Observations are generated using the representation as the first hitting time of a hyperplane of a correlated Brownian motion.
 }
 \examples{
 # Density evaluation

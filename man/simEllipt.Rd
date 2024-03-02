@@ -4,10 +4,10 @@
 \alias{simEllipt}
 \title{Simulate elliptical vector subject to a linear constraint}
 \usage{
-simEllipt(nsim, beta, mu, sigma, df)
+simEllipt(n, beta, mu, sigma, df)
 }
 \arguments{
-\item{nsim}{number of simulations}
+\item{n}{number of simulations}
 
 \item{beta}{\code{d} vector of linear constraints}
 
@@ -18,7 +18,7 @@ simEllipt(nsim, beta, mu, sigma, df)
 \item{df}{degrees of freedom argument}
 }
 \value{
-an \code{nsim} by \code{d} matrix of random vectors
+an \code{n} by \code{d} matrix of random vectors
 }
 \description{
 Simulate multivariate Student-t \eqn{\boldsymbol{x}}
