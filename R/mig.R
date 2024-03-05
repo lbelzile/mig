@@ -80,7 +80,7 @@ dmig <- function(x, xi, Omega, beta, shift, log = TRUE){
 #' xi <- rexp(d)
 #' Omega <- matrix(0.5, d, d) + diag(d)
 #' samp <- rmig(n = 1000, beta = beta, xi = xi, Omega = Omega)
-#' mle <- mig_mle(samp, beta = beta)
+#' mle <- fit_mig(samp, beta = beta, method = "mle")
 rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm"),
                  timeinc = 1e-3){
    method <- match.arg(method)
@@ -158,7 +158,8 @@ rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm"),
 #' \item \code{Omega}: MLE of the scale matrix
 #' }
 #' @export
-mig_mle <- function(x, beta, shift){
+#' @keywords internal
+.mig_mle <- function(x, beta, shift){
    d <- length(beta)
    x <- matrix(x, ncol = d)
    n <- nrow(x)
@@ -184,11 +185,12 @@ mig_mle <- function(x, beta, shift){
 #' @inheritParams dmig
 #' @return a list with components:
 #' \itemize{
-#' \item \code{xi}: MOM estimator of the expectation or location vector
-#' \item \code{Omega}: MOM estimator of the scale matrix
+#' \item \code{xi}: MOM estimate of the expectation or location vector
+#' \item \code{Omega}: MOM estimate of the scale matrix
 #' }
 #' @export
-mig_mom <- function(x, beta, shift){
+#' @keywords internal
+.mig_mom <- function(x, beta, shift){
    d <- length(beta)
    x <- matrix(x, ncol = d)
    n <- nrow(x)
@@ -202,4 +204,21 @@ mig_mom <- function(x, beta, shift){
    Omega_hat <- cov(x)/sum(beta*xi_hat)
    list(xi = xi_hat + shift,
         Omega = Omega_hat)
+}
+
+#' Fit multivariate inverse Gaussian distribution
+#' @inheritParams .mig_mle
+#' @param method string, one of \code{mle} for maximum likelihood estimation, or \code{mom} for method of moments.
+#' @return a list with components:
+#' \itemize{
+#' \item \code{xi}: estimate of the expectation or location vector
+#' \item \code{Omega}: estimate of the scale matrix
+#' }
+fit_mig <- function(x, beta, method = c("mle","mom"), shift){
+   method <- match.arg(method)
+   if(method == "mle"){
+      .mig_mle(x = x, beta = beta, shift = shift)
+   } else if(method == "mom"){
+      .mig_mom(x = x, beta = beta, shift = shift)
+   }
 }

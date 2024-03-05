@@ -14,7 +14,7 @@
 #' @param beta \code{d} vector defining the halfspace
 #' @param shift location vector for translating the halfspace. If missing, defaults to zero
 #' @param type string indicating whether to compute an isotropic model or estimate the optimal scale matrix via optimization
-#' @param method estimation criterion, either \code{asymptotic} for the expression that minimizes the asymptotic integrated squared error or \code{lcv} for likelihood (leave-one-out) cross-validation
+#' @param method estimation criterion, either \code{amise} for the expression that minimizes the asymptotic integrated squared error or \code{lcv} for likelihood (leave-one-out) cross-validation
 #' @param N integer number of simulations to evaluate the integrals of the MISE by Monte Carlo
 #' @param pointwise if \code{NULL}, evaluates the mean integrated squared error, otherwise a \code{d} vector to evaluate the bandwidth or scale pointwise
 #' @return a \code{d} by \code{d} scale matrix
@@ -23,7 +23,7 @@ mig_kdens_bandwidth<- function(
       x,
       beta,
       shift,
-      method = c("asymptotic", "lcv"),
+      method = c("amise", "lcv"),
       type = c("isotropic", "full"),
       N = 1e4L,
       # buffer = 0.01,
@@ -50,9 +50,9 @@ mig_kdens_bandwidth<- function(
       chol <- t(chol)
       crossprod(chol)
    }
-   if(method == "asymptotic"){
+   if(method == "amise"){
       # Compute maximum likelihood estimate
-      mle <- mig_mle(x = x, beta = beta)
+      mle <- .mig_mom(x = x, beta = beta)
       # Simulate observations from MLE to get Monte Carlo sample
       # to approximate the integral of the MISE
       if(!is.null(pointwise)){
@@ -63,6 +63,7 @@ mig_kdens_bandwidth<- function(
       }
       xbeta <- c(samp %*% beta)
       logxbeta <- log(xbeta)
+      browser()
       # Integral blows up near the boundary
       # samp <- samp[xbeta > buffer,,drop = FALSE]
       # xbeta <- xbeta[xbeta > buffer]
@@ -70,7 +71,7 @@ mig_kdens_bandwidth<- function(
       if(type == "isotropic"){
       hopt <-  (d / n * int1 /
       mean(xbeta^2 * dmig_laplacian(x = samp, xi = mle$xi, Omega = mle$Omega, beta = beta, scale = FALSE)^2 *
-          dmig(x = samp,  xi = mle$xi, Omega = mle$Omega, beta = beta, log = FALSE)))^(2/(d+4))
+          dmig(x = samp,  xi = mle$xi, Omega = mle$Omega, beta = beta, log = FALSE)))^(1/(d+4))
       return(diag(rep(hopt, d)))
       } else if(type == "full"){
          gradients <- mig_loglik_grad(x = samp, beta = beta, xi = mle$xi, Omega = mle$Omega)
@@ -142,18 +143,19 @@ mig_kdens_bandwidth<- function(
 #' \eqn{\boldsymbol{\xi}} is the location parameter.
 #' @param newdata matrix of new observations at which to evaluated the kernel density
 #' @inheritParams dmig
+#' @export
 #' @return value of the (log)-density at \code{newdata}
 mig_kdens <- function(x, newdata, Omega, beta, log = FALSE){
-   d <- length(beta)
-   newdata <- as.matrix(newdata, ncol = d)
-   x <- matrix(x, ncol = d)
-   valid <- newdata %*% beta > 0
-   logd <- rep(-Inf, nrow(newdata))
-   logd[valid] <- apply(newdata[valid,], 1, function(xi){
-      .lsum(dmig(x = x, beta = beta, Omega = Omega, xi = xi, log = TRUE))}) - log(nrow(x))
+   # d <- length(beta)
+   # newdata <- as.matrix(newdata, ncol = d)
+   # x <- matrix(x, ncol = d)
+   # valid <- newdata %*% beta > 0
+   # logd <- rep(-Inf, nrow(newdata))
+   # logd[valid] <- apply(newdata[valid,], 1, function(xi){
+   #    .lsum(dmig(x = x, beta = beta, Omega = Omega, xi = xi, log = TRUE))}) - log(nrow(x))
    if(log){
-      return(logd)
+      return(mig_kdens_arma(x = x, newdata = newdata, Omega = Omega, beta = beta, logd = log))
    } else{
-      return(exp(logd))
+      return(exp(mig_kdens_arma(x = x, newdata = newdata, Omega = Omega, beta = beta, logd = log)))
    }
 }

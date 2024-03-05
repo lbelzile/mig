@@ -3,16 +3,17 @@
 #' Simulate multivariate Student-t \eqn{\boldsymbol{x}}
 #' with location vector \code{mu}, scale matrix \code{sigma} and  \code{df} (integer) degrees of freedom
 #' subject to the linear constraint \eqn{\boldsymbol{\beta}^\top\boldsymbol{x} > 0}.
-#' Negative degrees of freedom or values larger than 1000 imply Gaussian vectors are generated instead
+#' Negative degrees of freedom or values larger than 1000 imply Gaussian vectors are generated instead.
 #' @param n number of simulations
 #' @param beta \code{d} vector of linear constraints
 #' @param mu location vector
 #' @param sigma scale matrix
+#' @param delta buffer; default to zero
 #' @param df degrees of freedom argument
 #' @return an \code{n} by \code{d} matrix of random vectors
 #' @export
 #' @keywords internal
-simEllipt <- function(n, beta, mu, sigma, df){
+rtellipt <- function(n, beta, mu, sigma, df, delta = 0){
    d <- length(beta)
    Amat <- diag(d)
    Amat[1,] <- beta
@@ -30,7 +31,7 @@ simEllipt <- function(n, beta, mu, sigma, df){
          n = n,
          mu = c(Amat %*% mu),
          sigma = Amat %*% sigma %*% t(Amat),
-         lb = c(0, rep(-Inf, d-1)))
+         lb = c(delta, rep(-Inf, d-1)))
    } else{
       df <- as.integer(df)
       samp <- TruncatedNormal::rtmvt(
@@ -38,7 +39,7 @@ simEllipt <- function(n, beta, mu, sigma, df){
          mu = c(Amat %*% mu),
          df = df,
          sigma = Amat %*% sigma %*% t(Amat),
-         lb = c(0, rep(-Inf, d-1)))
+         lb = c(delta, rep(-Inf, d-1)))
    }
    cbind(c(solve(Amat)[1,] %*% t(samp)), samp[,-1])
 }

@@ -54,7 +54,7 @@ beta <- runif(d)
 xi <- rexp(d)
 Omega <- matrix(0.5, d, d) + diag(d)
 samp <- rmig(n = 1000, beta = beta, xi = xi, Omega = Omega)
-mle <- mig_mle(samp, beta = beta)
+mle <- fit_mig(samp, beta = beta, method = "mle")
 }
 \author{
 Frederic Ouimet (\code{bm}), Leo Belzile (\code{invsim})

@@ -24,9 +24,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mig_kdens_arma
+Rcpp::NumericVector mig_kdens_arma(arma::mat x, arma::mat newdata, arma::mat Omega, arma::colvec beta, bool logd);
+RcppExport SEXP _mig_mig_kdens_arma(SEXP xSEXP, SEXP newdataSEXP, SEXP OmegaSEXP, SEXP betaSEXP, SEXP logdSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type newdata(newdataSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Omega(OmegaSEXP);
+    Rcpp::traits::input_parameter< arma::colvec >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< bool >::type logd(logdSEXP);
+    rcpp_result_gen = Rcpp::wrap(mig_kdens_arma(x, newdata, Omega, beta, logd));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_mig_mig_lcv", (DL_FUNC) &_mig_mig_lcv, 3},
+    {"_mig_mig_kdens_arma", (DL_FUNC) &_mig_mig_kdens_arma, 5},
     {NULL, NULL, 0}
 };
 

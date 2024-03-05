@@ -8,7 +8,7 @@ mig_kdens_bandwidth(
   x,
   beta,
   shift,
-  method = c("asymptotic", "lcv"),
+  method = c("amise", "lcv"),
   type = c("isotropic", "full"),
   N = 10000L,
   pointwise = NULL
@@ -21,7 +21,7 @@ mig_kdens_bandwidth(
 
 \item{shift}{location vector for translating the halfspace. If missing, defaults to zero}
 
-\item{method}{estimation criterion, either \code{asymptotic} for the expression that minimizes the asymptotic integrated squared error or \code{lcv} for likelihood (leave-one-out) cross-validation}
+\item{method}{estimation criterion, either \code{amise} for the expression that minimizes the asymptotic integrated squared error or \code{lcv} for likelihood (leave-one-out) cross-validation}
 
 \item{type}{string indicating whether to compute an isotropic model or estimate the optimal scale matrix via optimization}
 
