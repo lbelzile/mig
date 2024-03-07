@@ -214,6 +214,7 @@ rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm"),
 #' \item \code{xi}: estimate of the expectation or location vector
 #' \item \code{Omega}: estimate of the scale matrix
 #' }
+#' @export
 fit_mig <- function(x, beta, method = c("mle","mom"), shift){
    method <- match.arg(method)
    if(method == "mle"){

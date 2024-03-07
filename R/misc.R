@@ -109,6 +109,29 @@ dmig_laplacian <- function(x, xi, Omega, beta, scale = TRUE){
    return(laplacian)
 }
 
+mvnorm_loglik_grad <- function(x, mu, Q){
+   x <- matrix(x, ncol = d)
+   -scale(x, center = mu, scale = FALSE) %*% Q
+}
+
+mvnorm_loglik_hessian <- function(Q){
+   -Q
+}
+
+mvnorm_loglik_laplacian <- function(Q){
+   -sum(diag(Q))
+}
+
+dtnorm_laplacian <- function(x, mu, sigma, beta, delta = 0, scale = TRUE){
+   Q <- solve(sigma)
+   laplacian <- rowSums(mvnorm_loglik_grad(x = x, mu = mu, Q = Q)^2) +
+      mvnorm_loglik_laplacian(Q = Q)
+   if(isTRUE(scale)){
+      laplacian <- laplacian * dtellipt(x = x, beta = beta, mu = mu, sigma = sigma, df = 0, delta = delta, log = FALSE)
+   }
+   return(laplacian)
+}
+
 #' Log of sum of terms
 #'
 #' Computes the log of a sum of positive components, given on the log scale (\code{lx}), avoiding numerical overflow.

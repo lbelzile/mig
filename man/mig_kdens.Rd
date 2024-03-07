@@ -2,7 +2,7 @@
 % Please edit documentation in R/bandwidth.R
 \name{mig_kdens}
 \alias{mig_kdens}
-\title{Kernel density estimator}
+\title{Multivariate inverse Gaussian kernel density estimator}
 \usage{
 mig_kdens(x, newdata, Omega, beta, log = FALSE)
 }

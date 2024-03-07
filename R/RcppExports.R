@@ -17,14 +17,26 @@ mig_lcv <- function(x, beta, Omega) {
 #' MIG kernel density estimator
 #'
 #' Given a data matrix over a half-space defined by \code{beta},
-#' compute the log density using leave-one-out cross validation,
-#' taking in turn an observation as location vector and computing the
-#' density of the resulting mixture.
+#' compute the log density taking in turn an observation in  \code{newdata}
+#' as location vector and computing the kernel density estimate.
 #' @inheritParams dmig
 #' @param newdata matrix of new observations at which to evaluated the kernel density
 #' @return the value of the likelihood cross-validation criterion
 #' @keywords internal
 mig_kdens_arma <- function(x, newdata, Omega, beta, logd) {
     .Call(`_mig_mig_kdens_arma`, x, newdata, Omega, beta, logd)
+}
+
+#' Truncated Gaussian kernel density estimator
+#'
+#' Given a data matrix over a half-space defined by \code{beta},
+#' compute the log density of the asymmetric truncated Gaussian kernel density estimator,
+#' taking in turn an observation as location vector.
+#' @inheritParams dmig
+#' @param newdata matrix of new observations at which to evaluated the kernel density
+#' @return the value of the likelihood cross-validation criterion
+#' @keywords internal
+tnorm_kdens_arma <- function(x, newdata, Omega, beta, logd) {
+    .Call(`_mig_tnorm_kdens_arma`, x, newdata, Omega, beta, logd)
 }
 

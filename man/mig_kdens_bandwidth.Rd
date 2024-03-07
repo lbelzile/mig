@@ -10,7 +10,10 @@ mig_kdens_bandwidth(
   shift,
   method = c("amise", "lcv"),
   type = c("isotropic", "full"),
+  approx = c("mig", "tnorm"),
+  transformation = c("none", "scaling", "spherical"),
   N = 10000L,
+  buffer = 0.25,
   pointwise = NULL
 )
 }
@@ -24,6 +27,10 @@ mig_kdens_bandwidth(
 \item{method}{estimation criterion, either \code{amise} for the expression that minimizes the asymptotic integrated squared error or \code{lcv} for likelihood (leave-one-out) cross-validation}
 
 \item{type}{string indicating whether to compute an isotropic model or estimate the optimal scale matrix via optimization}
+
+\item{approx}{string; distribution to approximate the true density function \eqn{f(x)}; either \code{mig} for multivariate inverse Gaussian, or \code{tnorm} for truncated Gaussian.}
+
+\item{transformation}{string for optional scaling of the data before computing the bandwidth. Either standardization to unit variance \code{scaling}, spherical transformation to unit variance and zero correlation (\code{spherical}), or \code{none} (default).}
 
 \item{N}{integer number of simulations to evaluate the integrals of the MISE by Monte Carlo}
 
