@@ -238,7 +238,7 @@ mig_kdens <- function(x, newdata, Omega, beta, log = FALSE){
 #' @return a vector containing the value of the kernel density at each of the \code{newdata} points
 #' @keywords internal
 #' @export
-kdens_tnorm <- function(x, newdata, Sigma, beta, log = TRUE){
+tellipt_kdens <- function(x, newdata, Sigma, beta, log = TRUE, ...){
    #   d <- length(beta)
    #   stopifnot(ncol(x) == d,
    #             ncol(newdata) == d,
