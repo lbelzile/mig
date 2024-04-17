@@ -14,7 +14,8 @@ mig_kdens_bandwidth(
   transformation = c("none", "scaling", "spherical"),
   N = 10000L,
   buffer = 0.25,
-  pointwise = NULL
+  pointwise = NULL,
+  maxiter = 2000L
 )
 }
 \arguments{
@@ -35,6 +36,8 @@ mig_kdens_bandwidth(
 \item{N}{integer number of simulations to evaluate the integrals of the MISE by Monte Carlo}
 
 \item{pointwise}{if \code{NULL}, evaluates the mean integrated squared error, otherwise a \code{d} vector to evaluate the bandwidth or scale pointwise}
+
+\item{maxiter}{integer; max number of iterations in the call to \code{optim}.}
 }
 \value{
 a \code{d} by \code{d} scale matrix

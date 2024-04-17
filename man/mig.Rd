@@ -3,11 +3,14 @@
 \name{dmig}
 \alias{dmig}
 \alias{rmig}
+\alias{pmig}
 \title{Multivariate inverse Gaussian distribution}
 \usage{
 dmig(x, xi, Omega, beta, shift, log = TRUE)
 
 rmig(n, xi, Omega, beta, shift, method = c("invsim", "bm"), timeinc = 0.001)
+
+pmig(q, xi, Omega, beta, log = FALSE, method = c("sov", "mc"), B = 10000L)
 }
 \arguments{
 \item{x}{\code{n} by \code{d} matrix of quantiles}
@@ -20,18 +23,24 @@ rmig(n, xi, Omega, beta, shift, method = c("invsim", "bm"), timeinc = 0.001)
 
 \item{shift}{\code{d} translation for the half-space \eqn{\boldsymbol{a}}}
 
-\item{log}{logical; if \code{TRUE}, return the log density}
+\item{log}{logical; if \code{TRUE}, returns log probabilities}
 
 \item{n}{number of observations}
 
 \item{method}{string; one of inverse system (\code{invsim}, default), Brownian motion (\code{bm})}
 
 \item{timeinc}{time increment for multivariate simulation algorithm based on the hitting time of Brownian motion, default to \code{1e-3}.}
+
+\item{q}{\code{n} by \code{d} matrix of quantiles}
+
+\item{B}{number of Monte Carlo replications for the SOV estimator}
 }
 \value{
 for \code{dmig}, the (log)-density
 
 for \code{rmig}, an \code{n} vector if \code{d=1} (univariate) or an \code{n} by \code{d} matrix if \code{d > 1}
+
+an \code{n} vector of (log) probabilities
 }
 \description{
 The density of the MIG model is
@@ -49,13 +58,22 @@ xi <- c(1, 1)
 Omega <- matrix(c(2, -1, -1, 2), nrow = 2, ncol = 2)
 dmig(x, xi = xi, Omega = Omega, beta = beta)
 # Random number generation
-d <- 5
+d <- 5L
 beta <- runif(d)
 xi <- rexp(d)
 Omega <- matrix(0.5, d, d) + diag(d)
 samp <- rmig(n = 1000, beta = beta, xi = xi, Omega = Omega)
 mle <- fit_mig(samp, beta = beta, method = "mle")
+set.seed(1234)
+d <- 2L
+beta <- runif(d)
+Omega <- rWishart(n = 1, df = 2*d, Sigma = matrix(0.5, d, d) + diag(d))[,,1]
+xi <- rexp(d)
+q <- mig::rmig(n = 10, beta = beta, Omega = Omega, xi = xi)
+pmig(q, xi = xi, beta = beta, Omega = Omega)
 }
 \author{
 Frederic Ouimet (\code{bm}), Leo Belzile (\code{invsim})
+
+Leo Belzile
 }

@@ -110,6 +110,7 @@ dmig_laplacian <- function(x, xi, Omega, beta, scale = TRUE){
 }
 
 mvnorm_loglik_grad <- function(x, mu, Q){
+   d <- ncol(Q)
    x <- matrix(x, ncol = d)
    -scale(x, center = mu, scale = FALSE) %*% Q
 }

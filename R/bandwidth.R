@@ -19,6 +19,7 @@
 #' @param approx string; distribution to approximate the true density function \eqn{f(x)}; either \code{mig} for multivariate inverse Gaussian, or \code{tnorm} for truncated Gaussian.
 #' @param transformation string for optional scaling of the data before computing the bandwidth. Either standardization to unit variance \code{scaling}, spherical transformation to unit variance and zero correlation (\code{spherical}), or \code{none} (default).
 #' @param pointwise if \code{NULL}, evaluates the mean integrated squared error, otherwise a \code{d} vector to evaluate the bandwidth or scale pointwise
+#' @param maxiter integer; max number of iterations in the call to \code{optim}.
 #' @return a \code{d} by \code{d} scale matrix
 #' @export
 mig_kdens_bandwidth<- function(
@@ -31,7 +32,9 @@ mig_kdens_bandwidth<- function(
       transformation = c("none","scaling","spherical"),
       N = 1e4L,
       buffer = 0.25,
-      pointwise = NULL){
+      pointwise = NULL,
+      maxiter = 2e3L){
+   maxiter <- max(as.integer(maxiter), 1e4L, na.rm = TRUE)
    transformation <- match.arg(transformation)
    if(transformation %in% c("scaling","spherical")){
       if(transformation == "scaling"){
@@ -54,8 +57,6 @@ mig_kdens_bandwidth<- function(
          pointwise = pointwise)
       return(t(Tm)%*% bw %*% Tm)
    }
-
-
    buffer <- pmax(buffer[1], 0)
    stopifnot(buffer >= 0, length(buffer) == 1, is.finite(buffer))
    method <- match.arg(method)
@@ -76,14 +77,14 @@ mig_kdens_bandwidth<- function(
    chol2cov <- function(pars, d){
       stopifnot(length(pars) == d*(d+1)/2)
       chol <- matrix(0, nrow = d, ncol = d)
-      diag(chol) <- exp(pars[1:d])
+      diag(chol) <- abs(pars[1:d])
       chol[lower.tri(chol, diag = FALSE)] <- pars[-(1:d)]
       chol <- t(chol)
       crossprod(chol)
    }
    cov2chol <- function(cov){
      L <- t(chol(cov))
-     c(log(diag(L)), L[lower.tri(L, diag = FALSE)])
+     c(abs(diag(L)), L[lower.tri(L, diag = FALSE)])
    }
    start <- cov2chol(n^(-1/(d+2)) * cov(x))
    if(method == "amise"){
@@ -91,6 +92,9 @@ mig_kdens_bandwidth<- function(
       if(approx == "mig"){
          estim <- .mig_mom(x = x, beta = beta)
       } else{
+         # Approximation is truncated Gaussian
+         # use moments (this is not quite correct, but avoids
+         # numerical optimization to find MLE)
          estim <- list(mu = colMeans(x), sigma = cov(x))
       }
       # Simulate observations from MLE to get Monte Carlo sample
@@ -149,10 +153,17 @@ mig_kdens_bandwidth<- function(
              mean(exp(2*log(abs(apply(hessians, 1, function(x){sum(Hmat * x)}))) + logscalefact))/4
 
        }
-        optH <- optim(par = start,
-                     fn = optfun,
-                     method = "BFGS",
-                     control = list(maxit = 1e4L))
+       # Test different optimization routines
+       if (!requireNamespace("minqa", quietly = TRUE)) {
+           optH <- optim(par = start,
+                        fn = optfun,
+                        method = "BFGS",
+                        control = list(maxit = maxiter))
+       } else{
+       optH <- minqa::newuoa(par = start,
+                             fn = optfun,
+                             control = list(maxfun = maxiter))
+       }
        return(chol2cov(optH$par, d = d))
       }
    } else if(method == "lcv"){
@@ -170,29 +181,35 @@ mig_kdens_bandwidth<- function(
          -mig_lcv(x = x, beta = beta, Omega = Hmat)
       }
    if(type == "isotropic"){
-      opt <- suppressWarnings(nlm(f = optfun,  p = (-1/(d+2))*log(n),
-                                  iterlim = 1e4))
-      if(inherits(opt, "try-error")){
-         convergence <- FALSE
-      } else{
-         if(isTRUE(opt$code %in% 1:2)){
+      convergence <- FALSE
+      opt <- suppressWarnings(
+         optim(fn = optfun,
+               par = (-1/(d+2))*(log(n)+log(d+2)),
+               control = list(maxit = maxiter),
+               method = "Brent",
+               lower = -20, upper = 5))
+      if(isTRUE(opt$convergence == 0)){
             convergence <- TRUE
-         } else{
-            convergence <- FALSE
-            warning("Optimization did not converge")
-         }
       }
       if(!convergence){
          warning("Optimization did not converge")
          return(diag(NA, nrow = d, ncol = d))
       } else{
-         return(diag(d) * exp(opt$estimate))
+         return(diag(d) * exp(opt$par))
       }
       } else if(type == "full"){
-         optH <- optim(par = start, #rep(0, d*(d+1)/2),
-                       fn = optfun,
-                       method = "Nelder-Mead",
-                       control = list(maxit = 1e4L))
+
+         if (!requireNamespace("minqa", quietly = TRUE)) {
+            optH <- optim(par = start, #rep(0, d*(d+1)/2),
+                        fn = optfun,
+                        method = "Nelder-Mead",
+                        control = list(maxit = maxiter))
+        } else{
+         optH <- minqa::newuoa(par = start,
+                               fn = optfun,
+                               control = list(maxfun = maxiter))
+         optH$convergence <- optH$ierr
+        }
          if(optH$convergence != 0){
             warning("Optimization of bandwidth matrix did not converge.")
          }

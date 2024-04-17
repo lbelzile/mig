@@ -15,7 +15,7 @@ tellipt_kdens(x, newdata, Sigma, beta, log = TRUE, ...)
 
 \item{beta}{\code{d} vector \eqn{\boldsymbol{\beta}} defining the half-space through \eqn{\boldsymbol{\beta}^{\top}\boldsymbol{\xi}>0}}
 
-\item{log}{logical; if \code{TRUE}, return the log density}
+\item{log}{logical; if \code{TRUE}, returns log probabilities}
 }
 \value{
 a vector containing the value of the kernel density at each of the \code{newdata} points

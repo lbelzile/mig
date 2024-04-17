@@ -15,7 +15,7 @@ mig_kdens(x, newdata, Omega, beta, log = FALSE)
 
 \item{beta}{\code{d} vector \eqn{\boldsymbol{\beta}} defining the half-space through \eqn{\boldsymbol{\beta}^{\top}\boldsymbol{\xi}>0}}
 
-\item{log}{logical; if \code{TRUE}, return the log density}
+\item{log}{logical; if \code{TRUE}, returns log probabilities}
 }
 \value{
 value of the (log)-density at \code{newdata}

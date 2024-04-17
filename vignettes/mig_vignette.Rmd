@@ -100,7 +100,7 @@ Z2 <- sweep(Z2, 2, c(Q2 %*% xi), "+") + tcrossprod(Z1 - mu, c(Q2 %*% c(Omega %*%
 # Compute inverse of Q matrix (it is actually invertible)
 samp <- t(solve(Qmat) %*% t(cbind(Z1, Z2)))
 # Check properties
-mle <- mig_mle(samp, beta = beta)
+mle <- mig::fit_mig(samp, beta = beta)
 max(abs(mle$xi - xi))
 norm(mle$Omega - Omega, type = "f")
 max(abs(1 - mle$Omega/Omega))
