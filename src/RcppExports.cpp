@@ -11,19 +11,6 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// mig_lcv
-double mig_lcv(arma::mat x, arma::rowvec beta, arma::mat Omega);
-RcppExport SEXP _mig_mig_lcv(SEXP xSEXP, SEXP betaSEXP, SEXP OmegaSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
-    Rcpp::traits::input_parameter< arma::rowvec >::type beta(betaSEXP);
-    Rcpp::traits::input_parameter< arma::mat >::type Omega(OmegaSEXP);
-    rcpp_result_gen = Rcpp::wrap(mig_lcv(x, beta, Omega));
-    return rcpp_result_gen;
-END_RCPP
-}
 // mig_kdens_arma
 Rcpp::NumericVector mig_kdens_arma(arma::mat x, arma::mat newdata, arma::mat Omega, arma::colvec beta, bool logd);
 RcppExport SEXP _mig_mig_kdens_arma(SEXP xSEXP, SEXP newdataSEXP, SEXP OmegaSEXP, SEXP betaSEXP, SEXP logdSEXP) {
@@ -54,11 +41,56 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// mig_lcv
+double mig_lcv(arma::mat x, arma::colvec beta, arma::mat Omega);
+RcppExport SEXP _mig_mig_lcv(SEXP xSEXP, SEXP betaSEXP, SEXP OmegaSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::colvec >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Omega(OmegaSEXP);
+    rcpp_result_gen = Rcpp::wrap(mig_lcv(x, beta, Omega));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mig_rlcv
+double mig_rlcv(arma::mat x, arma::colvec beta, arma::mat Omega, arma::mat xsamp, arma::vec dxsamp);
+RcppExport SEXP _mig_mig_rlcv(SEXP xSEXP, SEXP betaSEXP, SEXP OmegaSEXP, SEXP xsampSEXP, SEXP dxsampSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::colvec >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Omega(OmegaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type xsamp(xsampSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type dxsamp(dxsampSEXP);
+    rcpp_result_gen = Rcpp::wrap(mig_rlcv(x, beta, Omega, xsamp, dxsamp));
+    return rcpp_result_gen;
+END_RCPP
+}
+// mig_lscv
+double mig_lscv(arma::mat x, arma::colvec beta, arma::mat Omega, arma::mat xsamp, arma::vec dxsamp);
+RcppExport SEXP _mig_mig_lscv(SEXP xSEXP, SEXP betaSEXP, SEXP OmegaSEXP, SEXP xsampSEXP, SEXP dxsampSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< arma::mat >::type x(xSEXP);
+    Rcpp::traits::input_parameter< arma::colvec >::type beta(betaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type Omega(OmegaSEXP);
+    Rcpp::traits::input_parameter< arma::mat >::type xsamp(xsampSEXP);
+    Rcpp::traits::input_parameter< arma::vec >::type dxsamp(dxsampSEXP);
+    rcpp_result_gen = Rcpp::wrap(mig_lscv(x, beta, Omega, xsamp, dxsamp));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_mig_mig_lcv", (DL_FUNC) &_mig_mig_lcv, 3},
     {"_mig_mig_kdens_arma", (DL_FUNC) &_mig_mig_kdens_arma, 5},
     {"_mig_tnorm_kdens_arma", (DL_FUNC) &_mig_tnorm_kdens_arma, 5},
+    {"_mig_mig_lcv", (DL_FUNC) &_mig_mig_lcv, 3},
+    {"_mig_mig_rlcv", (DL_FUNC) &_mig_mig_rlcv, 5},
+    {"_mig_mig_lscv", (DL_FUNC) &_mig_mig_lscv, 5},
     {NULL, NULL, 0}
 };
 

@@ -8,14 +8,15 @@ mig_kdens_bandwidth(
   x,
   beta,
   shift,
-  method = c("amise", "lcv"),
+  method = c("amise", "lcv", "lscv", "rlcv"),
   type = c("isotropic", "full"),
   approx = c("mig", "tnorm"),
   transformation = c("none", "scaling", "spherical"),
   N = 10000L,
   buffer = 0.25,
   pointwise = NULL,
-  maxiter = 2000L
+  maxiter = 2000L,
+  ...
 )
 }
 \arguments{
@@ -25,7 +26,7 @@ mig_kdens_bandwidth(
 
 \item{shift}{location vector for translating the halfspace. If missing, defaults to zero}
 
-\item{method}{estimation criterion, either \code{amise} for the expression that minimizes the asymptotic integrated squared error or \code{lcv} for likelihood (leave-one-out) cross-validation}
+\item{method}{estimation criterion, either \code{amise} for the expression that minimizes the asymptotic integrated squared error, \code{lcv} for likelihood (leave-one-out) cross-validation, \code{lscv} for least-square cross-validation or \code{rlcv} for robust cross validation of Wu (2019)}
 
 \item{type}{string indicating whether to compute an isotropic model or estimate the optimal scale matrix via optimization}
 
@@ -51,4 +52,9 @@ matrix that minimizes the asymptotic mean integrated squared error away from the
 The latter depend on the true unknown density, which is replaced using as plug-in
  a MIG distribution evaluated at the maximum likelihood estimator. The integral or the integrated
  squared error are obtained by Monte Carlo integration with \code{N} simulations
+}
+\references{
+Wu, X. (2019). Robust likelihood cross-validation for kernel density estimation. \emph{Journal of Business & Economic Statistics}, 37(\bold{4}), 761–770. \url{https://doi.org/10.1080/07350015.2018.1424633}
+Bowman, A.W. (1984). An alternative method of cross-validation for the smoothing of density estimates, \emph{Biometrika}, 71(\bold{2}), 353–360. \url{https://doi.org/10.1093/biomet/71.2.353}
+Rudemo, M. (1982). Empirical choice of histograms and kernel density estimators. \emph{Scandinavian Journal of Statistics}, 9(\bold{2}), 65–78. http://www.jstor.org/stable/4615859
 }
