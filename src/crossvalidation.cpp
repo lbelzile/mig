@@ -5,15 +5,15 @@
 
 
 //' MIG kernel density estimator
- //'
- //' Given a data matrix over a half-space defined by \code{beta},
- //' compute the log density taking in turn an observation in  \code{newdata}
- //' as location vector and computing the kernel density estimate.
- //' @inheritParams dmig
- //' @param newdata matrix of new observations at which to evaluated the kernel density
- //' @return the value of the likelihood cross-validation criterion
- //' @keywords internal
- // [[Rcpp::export]]
+//'
+//' Given a data matrix over a half-space defined by \code{beta},
+//' compute the log density taking in turn an observation in  \code{newdata}
+//' as location vector and computing the kernel density estimate.
+//' @inheritParams dmig
+//' @param newdata matrix of new observations at which to evaluated the kernel density
+//' @return the value of the likelihood cross-validation criterion
+//' @keywords internal
+// [[Rcpp::export]]
  Rcpp::NumericVector mig_kdens_arma(arma::mat x, arma::mat newdata, arma::mat Omega, arma::colvec beta, bool logd){
     arma::uword  n = newdata.n_rows;
     arma::uword  d = beta.n_elem;
@@ -171,17 +171,17 @@ double mig_lcv(arma::mat x, arma::colvec beta, arma::mat Omega) {
 
 
 //' Robust likelihood cross-validation for kernel density estimation
- //'
- //' Given a data matrix over a half-space defined by \code{beta},
- //' compute the log density using leave-one-out cross validation,
- //' taking in turn an observation as location vector and computing the
- //' density of the resulting mixture.
- //' @inheritParams dmig
- //' @param xsamp matrix of points at which to evaluate the integral
- //' @param dxsamp density of points
- //' @return the value of the likelihood cross-validation criterion
- //' @export
- // [[Rcpp::export]]
+//'
+//' Given a data matrix over a half-space defined by \code{beta},
+//' compute the log density using leave-one-out cross validation,
+//' taking in turn an observation as location vector and computing the
+//' density of the resulting mixture.
+//' @inheritParams dmig
+//' @param xsamp matrix of points at which to evaluate the integral
+//' @param dxsamp density of points
+//' @return the value of the likelihood cross-validation criterion
+//' @export
+// [[Rcpp::export]]
 double mig_rlcv(arma::mat x, arma::colvec beta, arma::mat Omega,
                  arma::mat xsamp, arma::vec dxsamp) {
     arma::mat cholinv = chol(Omega.i());
@@ -201,7 +201,7 @@ double mig_rlcv(arma::mat x, arma::colvec beta, arma::mat Omega,
     arma::colvec terms(n-1);
     double logobj = 0;
     double maxterms = 0;
-    double logan = -0.5*d*log(2*arma::datum::pi) + -0.5*log_det_sympd(cov(x)) + lgamma(0.5*d) + (1-0.5*d)*log(log(1.0 * n)) - log(1.0 * n);
+    double logan = -0.5*d*log(2*arma::datum::pi) - 0.5*log_det_sympd(cov(x)) + lgamma(0.5*d) + (1-0.5*d)*log(log(1.0 * n)) - log(1.0 * n);
     double an = exp(logan);
     // double term = 0;
     if(beta.n_rows != d){

@@ -50,7 +50,6 @@ rtellipt <- function(n, beta, mu, sigma, df, delta = 0){
 #' with location vector \code{mu}, scale matrix \code{sigma} and  \code{df} (integer) degrees of freedom
 #' subject to the linear constraint \eqn{\boldsymbol{\beta}^\top\boldsymbol{x} > \delta}.
 #' Negative degrees of freedom or values larger than 1000 imply Gaussian vectors are generated instead.
-#' @param n number of simulations
 #' @param beta \code{d} vector of linear constraints
 #' @param mu location vector
 #' @param sigma scale matrix

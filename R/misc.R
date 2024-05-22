@@ -142,38 +142,39 @@ dtnorm_laplacian <- function(x, mu, sigma, beta, delta = 0, scale = TRUE){
 #' @author Marius Hofert, Martin Maechler (package \code{copula})
 #' @return a vector of log sums
 #' @export
-.lsum <- function (lx, l.off) {
-   rx <- length(d <- dim(lx))
-   if (mis.off <- missing(l.off))
-      l.off <- {
+.lsum <- function (lx, loff) {
+   d <- dim(lx)
+   rx <- length(d)
+   if (mis.off <- missing(loff))
+      loff <- {
          if (rx <= 1L)
             max(lx)
          else if (rx == 2L)
             apply(lx, 2L, max)
       }
    if (rx <= 1L) {
-      if (is.finite(l.off))
-         l.off + log(sum(exp(lx - l.off)))
-      else if (mis.off || is.na(l.off) || l.off == max(lx))
-         l.off
-      else stop("'l.off  is infinite but not == max(.)")
+      if (is.finite(loff))
+         loff + log(sum(exp(lx - loff)))
+      else if (mis.off || is.na(loff) || loff == max(lx))
+         loff
+      else stop("'loff  is infinite but not == max(.)")
    }
    else if (rx == 2L) {
-      if (any(x.off <- !is.finite(l.off))) {
-         if (mis.off || isTRUE(all.equal(l.off, apply(lx,
+      if (any(x.off <- !is.finite(loff))) {
+         if (mis.off || isTRUE(all.equal(loff, apply(lx,
                                                       2L, max)))) {
             if (all(x.off))
-               return(l.off)
-            r <- l.off
+               return(loff)
+            r <- loff
             iok <- which(!x.off)
-            l.of <- l.off[iok]
+            l.of <- loff[iok]
             r[iok] <- l.of + log(colSums(exp(lx[, iok, drop = FALSE] -
                                                 rep(l.of, each = d[1]))))
             r
          }
-         else stop("'l.off' has non-finite values but differs from default max(.)")
+         else stop("'loff' has non-finite values but differs from default max(.)")
       }
-      else l.off + log(colSums(exp(lx - rep(l.off, each = d[1]))))
+      else loff + log(colSums(exp(lx - rep(loff, each = d[1]))))
    }
    else stop("not yet implemented for arrays of rank >= 3")
 }

@@ -4,7 +4,7 @@
 \alias{.lsum}
 \title{Log of sum of terms}
 \usage{
-.lsum(lx, l.off)
+.lsum(lx, loff)
 }
 \arguments{
 \item{lx}{vector or matrix of log of terms to add}

@@ -2,7 +2,7 @@
 #' Optimal scale matrix for MIG kernel density estimation
 #'
 #' Given an \code{n} sample from a multivariate
-#' inverse Gaussian distribution on the halfspace defined by
+#' inverse Gaussian distribution on the half-space defined by
 #' \eqn{\{\boldsymbol{x} \in \mathbb{R}^d: \boldsymbol{\beta}^\top\boldsymbol{x}>0\}},
 #' the function computes the bandwidth (\code{type="isotropic"}) or scale
 #' matrix that minimizes the asymptotic mean integrated squared error away from the boundary.
@@ -11,8 +11,8 @@
 #'  squared error are obtained by Monte Carlo integration with \code{N} simulations
 #'
 #' @param x an \code{n} by \code{d} matrix of observations
-#' @param beta \code{d} vector defining the halfspace
-#' @param shift location vector for translating the halfspace. If missing, defaults to zero
+#' @param beta \code{d} vector defining the half-space
+#' @param shift location vector for translating the half-space. If missing, defaults to zero
 #' @param type string indicating whether to compute an isotropic model or estimate the optimal scale matrix via optimization
 #' @param method estimation criterion, either \code{amise} for the expression that minimizes the asymptotic integrated squared error, \code{lcv} for likelihood (leave-one-out) cross-validation, \code{lscv} for least-square cross-validation or \code{rlcv} for robust cross validation of Wu (2019)
 #' @param N integer number of simulations to evaluate the integrals of the MISE by Monte Carlo
@@ -20,6 +20,8 @@
 #' @param transformation string for optional scaling of the data before computing the bandwidth. Either standardization to unit variance \code{scaling}, spherical transformation to unit variance and zero correlation (\code{spherical}), or \code{none} (default).
 #' @param pointwise if \code{NULL}, evaluates the mean integrated squared error, otherwise a \code{d} vector to evaluate the bandwidth or scale pointwise
 #' @param maxiter integer; max number of iterations in the call to \code{optim}.
+#' @param buffer double indicating the buffer from the halfspace
+#' @param ... additional parameters, currently ignored
 #' @return a \code{d} by \code{d} scale matrix
 #' @references
 #' Wu, X. (2019). Robust likelihood cross-validation for kernel density estimation. \emph{Journal of Business & Economic Statistics}, 37(\bold{4}), 761–770. \url{https://doi.org/10.1080/07350015.2018.1424633}
@@ -158,7 +160,7 @@ mig_kdens_bandwidth<- function(
             logdens <- dtellipt(x = samp, beta = beta, mu = estim$mu, sigma = estim$sigma, delta = buffer, log = TRUE)
          }
          logscalefact <- logdens + 2*logxbeta
-       optfun <- function(pars){
+       optfun <- function(pars, ...){
           Hmat <- chol2cov(pars, d = d)
           exp(-0.5*determinant(Hmat)$modulus - log(n)) * int1 +
              mean(exp(2*log(abs(apply(hessians, 1, function(x){sum(Hmat * x)}))) + logscalefact))/4
@@ -181,7 +183,7 @@ mig_kdens_bandwidth<- function(
       if(method == "lcv"){
          xsamp <- NULL
          dxsamp <- NULL
-      optfun <- function(pars, ...){
+      optfun2 <- function(pars, x, xsamp, dxsamp, ...){
          if(length(pars) == 1L){
             Hmat <- exp(pars[1])*diag(d)
          } else if(length(pars) == d*(d+1)/2){
@@ -200,7 +202,7 @@ mig_kdens_bandwidth<- function(
          if(approx == "mig"){
             estim <- .mig_mom(x = x, beta = beta)
          } else{
-            estim <- list(mu = colMeans(x), sigma = cov(x))
+            estim <- list(mu = colMeans(x), sigma = covX)
          }
          if(approx == "mig"){
             samp <- rmig(n = N, xi = estim$xi, Omega = estim$Omega, beta = beta)
@@ -213,7 +215,7 @@ mig_kdens_bandwidth<- function(
                               sigma = estim$sigma, delta = buffer, log = FALSE)
          }
          if(method == "rlcv"){
-         optfun <- function(pars, x, xsamp, dxsamp){
+         optfun2 <- function(pars, x, xsamp, dxsamp, ...){
             if(length(pars) == 1L){
                Hmat <- exp(pars[1])*diag(d)
             } else if(length(pars) == d*(d+1)/2){
@@ -243,7 +245,7 @@ mig_kdens_bandwidth<- function(
                            dxsamp = dxsamp)
          }
          } else if(method == "lscv"){
-         optfun <- function(pars, x, xsamp, dxsamp){
+         optfun2 <- function(pars, x, xsamp, dxsamp, ...){
             if(length(pars) == 1L){
                Hmat <- exp(pars[1])*diag(d)
             } else if(length(pars) == d*(d+1)/2){
@@ -270,7 +272,7 @@ mig_kdens_bandwidth<- function(
    if(type == "isotropic"){
       convergence <- FALSE
       opt <- suppressWarnings(
-         optim(fn = optfun,
+         optim(fn = optfun2,
                par = (-1/(d+2))*(log(n)+log(d+2)),
                control = list(maxit = maxiter),
                method = "Brent",
@@ -290,7 +292,7 @@ mig_kdens_bandwidth<- function(
       } else if(type == "full"){
          if (!requireNamespace("minqa", quietly = TRUE)) {
             optH <- optim(par = start,
-                        fn = optfun,
+                        fn = optfun2,
                         x = x,
                         xsamp = samp,
                         dxsamp = dsamp,
@@ -298,7 +300,7 @@ mig_kdens_bandwidth<- function(
                         control = list(maxit = maxiter))
         } else{
          optH <- minqa::newuoa(par = start,
-                               fn = optfun,
+                               fn = optfun2,
                                x = x,
                                xsamp = samp,
                                dxsamp = dsamp,
@@ -308,26 +310,6 @@ mig_kdens_bandwidth<- function(
          if(optH$convergence != 0){
             warning("Optimization of bandwidth matrix did not converge.")
          }
-         # Hmat <- chol2cov(pars = optH$par, d = d)
-         # test <- -sapply(seq_len(n), function(i){
-         #    .lsum(dmig(x[-i, ,drop = FALSE],
-         #                       xi = as.numeric(x[i,]),
-         #                       Omega = Hmat, beta = beta, log = TRUE))
-         # })
-         # mean(test)
-         # library(ggplot2)
-         # ggplot(data = data.frame(
-         #    x = x[,1], y = x[,2], col = test),
-         #    aes(x = x, y = y, col = col)) +
-         #    geom_abline(intercept = 0, slope = -1) +
-         #    geom_point() +
-         #    labs(x = expression(x[1]),
-         #         y = expression(x[2]),
-         #         col = "log likelihood cross-validation score") +
-         #    scale_colour_viridis_c() +
-         #    theme_classic() +
-         #    theme(legend.position = "bottom")
-         # ggsave("MIG_LCV_problems.pdf", width = 6, height = 5)
          return(chol2cov(optH$par, d = d))
       }
    }

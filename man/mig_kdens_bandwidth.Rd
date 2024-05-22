@@ -22,9 +22,9 @@ mig_kdens_bandwidth(
 \arguments{
 \item{x}{an \code{n} by \code{d} matrix of observations}
 
-\item{beta}{\code{d} vector defining the halfspace}
+\item{beta}{\code{d} vector defining the half-space}
 
-\item{shift}{location vector for translating the halfspace. If missing, defaults to zero}
+\item{shift}{location vector for translating the half-space. If missing, defaults to zero}
 
 \item{method}{estimation criterion, either \code{amise} for the expression that minimizes the asymptotic integrated squared error, \code{lcv} for likelihood (leave-one-out) cross-validation, \code{lscv} for least-square cross-validation or \code{rlcv} for robust cross validation of Wu (2019)}
 
@@ -36,16 +36,20 @@ mig_kdens_bandwidth(
 
 \item{N}{integer number of simulations to evaluate the integrals of the MISE by Monte Carlo}
 
+\item{buffer}{double indicating the buffer from the halfspace}
+
 \item{pointwise}{if \code{NULL}, evaluates the mean integrated squared error, otherwise a \code{d} vector to evaluate the bandwidth or scale pointwise}
 
 \item{maxiter}{integer; max number of iterations in the call to \code{optim}.}
+
+\item{...}{additional parameters, currently ignored}
 }
 \value{
 a \code{d} by \code{d} scale matrix
 }
 \description{
 Given an \code{n} sample from a multivariate
-inverse Gaussian distribution on the halfspace defined by
+inverse Gaussian distribution on the half-space defined by
 \eqn{\{\boldsymbol{x} \in \mathbb{R}^d: \boldsymbol{\beta}^\top\boldsymbol{x}>0\}},
 the function computes the bandwidth (\code{type="isotropic"}) or scale
 matrix that minimizes the asymptotic mean integrated squared error away from the boundary.

@@ -18,8 +18,6 @@ dtellipt(x, beta, mu, sigma, df, delta = 0, log = FALSE)
 \item{delta}{buffer; default to zero}
 
 \item{log}{logical; if \code{TRUE}, return the log density}
-
-\item{n}{number of simulations}
 }
 \value{
 an \code{n} by \code{d} matrix of random vectors
