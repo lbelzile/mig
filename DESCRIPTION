@@ -1,7 +1,7 @@
 Package: mig
 Type: Package
 Title: Multivariate Inverse Gaussian Distribution
-Version: 0.1.0.0004
+Version: 1.0
 Authors@R: c(person(given="Frederic", family="Ouimet", email = "frederic.ouimet.23@gmail.com", role = "aut", comment = c(ORCID = "0000-0001-7933-5265")),
              person(given="Leo", family="Belzile", role = c("aut", "cre"), email = "belzilel@gmail.com", comment = c(ORCID = "0000-0002-9135-014X")))
 Description: The 'mig' package provides utilities for the multivariate inverse Gaussian <doi:10.1081/STA-120025379>, including kernel density estimation and random number generation.

@@ -412,7 +412,6 @@ pmig <- function(q, xi, Omega, beta, log = FALSE, method = c("sov", "mc"), B = 1
          lprobs[i] <- mig::.lsum(p) +
             log(statmod::pinvgauss(rmax, mean = xi_r, shape = xi_r^2/omega_r) -
                    statmod::pinvgauss(rmin, mean = xi_r, shape = xi_r^2/omega_r))
-         # err[i] <- sd(exp(p))/sqrt(B)
       }
    }
    lprobs <- lprobs - log(B)

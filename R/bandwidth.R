@@ -24,8 +24,8 @@
 #' @param ... additional parameters, currently ignored
 #' @return a \code{d} by \code{d} scale matrix
 #' @references
-#' Wu, X. (2019). Robust likelihood cross-validation for kernel density estimation. \emph{Journal of Business & Economic Statistics}, 37(\bold{4}), 761–770. \url{https://doi.org/10.1080/07350015.2018.1424633}
-#' Bowman, A.W. (1984). An alternative method of cross-validation for the smoothing of density estimates, \emph{Biometrika}, 71(\bold{2}), 353–360. \url{https://doi.org/10.1093/biomet/71.2.353}
+#' Wu, X. (2019). Robust likelihood cross-validation for kernel density estimation. \emph{Journal of Business & Economic Statistics}, 37(\bold{4}), 761–770. \doi{10.1080/07350015.2018.1424633}
+#' Bowman, A.W. (1984). An alternative method of cross-validation for the smoothing of density estimates, \emph{Biometrika}, 71(\bold{2}), 353–360. \doi{10.1093/biomet/71.2.353}
 #' Rudemo, M. (1982). Empirical choice of histograms and kernel density estimators. \emph{Scandinavian Journal of Statistics}, 9(\bold{2}), 65–78. http://www.jstor.org/stable/4615859
 #' @export
 mig_kdens_bandwidth<- function(
