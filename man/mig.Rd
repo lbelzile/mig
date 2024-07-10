@@ -6,7 +6,7 @@
 \alias{pmig}
 \title{Multivariate inverse Gaussian distribution}
 \usage{
-dmig(x, xi, Omega, beta, shift, log = TRUE)
+dmig(x, xi, Omega, beta, shift, log = FALSE)
 
 rmig(n, xi, Omega, beta, shift, method = c("invsim", "bm"), timeinc = 0.001)
 

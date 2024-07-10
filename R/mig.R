@@ -21,7 +21,7 @@
 #' Omega <- matrix(c(2, -1, -1, 2), nrow = 2, ncol = 2)
 #' dmig(x, xi = xi, Omega = Omega, beta = beta)
 #' @export
-dmig <- function(x, xi, Omega, beta, shift, log = TRUE){
+dmig <- function(x, xi, Omega, beta, shift, log = FALSE){
    # Cast vectors to matrix
    d <- length(beta)
    x <- matrix(x, ncol = d)
