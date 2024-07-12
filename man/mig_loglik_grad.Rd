@@ -15,6 +15,9 @@ mig_loglik_grad(x, xi, Omega, beta)
 
 \item{beta}{\code{d} vector \eqn{\boldsymbol{\beta}} defining the half-space through \eqn{\boldsymbol{\beta}^{\top}\boldsymbol{\xi}>0}}
 }
+\value{
+an \code{n} by \code{d} matrix of first derivatives for the gradient, observation by observation, or a \code{d} vector if \code{x} is a vector.
+}
 \description{
 This function returns the gradient vector of the log likelihood with respect to the
 argument \code{x}.

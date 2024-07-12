@@ -4,6 +4,7 @@
 #' argument \code{x}.
 #' @inheritParams dmig
 #' @keywords internal
+#' @return an \code{n} by \code{d} matrix of first derivatives for the gradient, observation by observation, or a \code{d} vector if \code{x} is a vector.
 #' @export
 mig_loglik_grad <- function(x, xi, Omega, beta){
    d <- length(beta)

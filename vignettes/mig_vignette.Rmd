@@ -23,7 +23,6 @@ knitr::opts_chunk$set(
 #| echo: false
 #| eval: true
 library(mig)
-par(bty = "l", pch = 20, xaxs = "i", yaxs = "i")
 set.seed(0)
 ```
 
@@ -55,6 +54,7 @@ plot(penult$qu,
      ylim = c(0, 0.25),
      yaxs = "i",
      xaxs = "i",
+     pch = 20,
      ylab = "penultimate shape",
      type = 'l',
      bty = "l")
