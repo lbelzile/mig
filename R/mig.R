@@ -124,25 +124,25 @@ rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm"),
          Mbeta <- (diag(d) - tcrossprod(beta)/(sum(beta^2)))
          # Matrix is rank-deficient: compute eigendecomposition
          # Shed matrix to remove the eigenvector corresponding to the 0 eigenvalue
-         Q2 <- t(eigen(Mbeta, symmetric = TRUE)$vectors[,-d, drop = FALSE])
+         Q2 <- eigen(Mbeta, symmetric = TRUE)$vectors[,-d, drop = FALSE]
          # Q2 <- t(svd(Mbeta)$u[,-d, drop = FALSE])
          # all.equal(rep(0, d-1), c(Q2 %*% beta)) # check orthogonality
          # all.equal(diag(d-1), tcrossprod(Q2)) # check basis is orthonormal
-         Qmat <- rbind(beta, Q2)
-         covmat <- solve(Q2 %*% solve(Omega) %*% t(Q2))
-
+         Qmat <- rbind(beta, t(Q2))
+         # covmat <- solve(t(Q2) %*% solve(Omega) %*% Q2)
+         covmat <- solve(crossprod(crossprod(backsolve(r = chol(Omega), x = diag(nrow(Omega))), Q2)))
          mu <- sum(beta*xi)
          omega <- sum(beta * c(Omega %*% beta))
          Z1 <- statmod::rinvgauss(n = n, mean = mu, shape = mu^2 / omega)
-         rt <- TruncatedNormal::rtmvnorm(n = n, mu = rep(0, d-1), sigma = covmat)
-         if(n == 1L){ # Convert to a matrix
+         rt <- TruncatedNormal::rtmvnorm(n = n, mu = rep(0, d-1), sigma = covmat, check = FALSE)
+         if(is.vector(rt)){ # Convert to a matrix if d=2 or n =1
           rt <- matrix(rt, nrow = n, ncol = d - 1L)
          }
          Z2 <- sweep(rt, 1, sqrt(Z1), "*")
-         Z2 <- sweep(Z2, 2, c(Q2 %*% xi), "+") +
-            tcrossprod(Z1 - mu, c(Q2 %*% c(Omega %*% beta)/omega))
+         Z2 <- sweep(Z2, 2, c(crossprod(Q2, xi)), "+") +
+            tcrossprod(Z1 - mu, c(crossprod(Q2, c(Omega %*% beta)/omega)))
          svdQ <- svd(Qmat)
-         Qinv <- svdQ$v %*% diag(1/svdQ$d) %*% t(svdQ$u)
+         Qinv <- svdQ$v %*% t(svdQ$u)/svdQ$d
          return(sweep(t(Qinv %*% t(cbind(Z1, Z2))),
                       MARGIN = 2, STATS = shift, FUN = "+"))
       }
