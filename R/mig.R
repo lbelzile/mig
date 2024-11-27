@@ -134,8 +134,11 @@ rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm"),
          mu <- sum(beta*xi)
          omega <- sum(beta * c(Omega %*% beta))
          Z1 <- statmod::rinvgauss(n = n, mean = mu, shape = mu^2 / omega)
-         Z2 <- sweep(as.matrix(TruncatedNormal::rtmvnorm(
-            n = n, mu = rep(0, d-1), sigma = covmat)), 1, sqrt(Z1), "*")
+         rt <- TruncatedNormal::rtmvnorm(n = n, mu = rep(0, d-1), sigma = covmat)
+         if(n == 1L){ # Convert to a matrix
+          rt <- matrix(rt, nrow = n, ncol = d - 1L)
+         }
+         Z2 <- sweep(rt, 1, sqrt(Z1), "*")
          Z2 <- sweep(Z2, 2, c(Q2 %*% xi), "+") +
             tcrossprod(Z1 - mu, c(Q2 %*% c(Omega %*% beta)/omega))
          svdQ <- svd(Qmat)
