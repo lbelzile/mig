@@ -80,6 +80,7 @@ dmig <- function(x, xi, Omega, beta, shift, log = FALSE){
 #' xi <- rexp(d)
 #' Omega <- matrix(0.5, d, d) + diag(d)
 #' samp <- rmig(n = 1000, beta = beta, xi = xi, Omega = Omega)
+#' stopifnot(isTRUE(all(samp %*% beta > 0)))
 #' mle <- fit_mig(samp, beta = beta, method = "mle")
 rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm"),
                  timeinc = 1e-3){
@@ -118,31 +119,33 @@ rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm"),
          output_matrix[i,] <- as.numeric(X) + shift
       }
       } else if(method == "invsim"){
-         d <- length(beta)
          beta <- as.numeric(beta)
          # Project onto orthogonal complement of vector
          Mbeta <- (diag(d) - tcrossprod(beta)/(sum(beta^2)))
          # Matrix is rank-deficient: compute eigendecomposition
          # Shed matrix to remove the eigenvector corresponding to the 0 eigenvalue
          Q2 <- eigen(Mbeta, symmetric = TRUE)$vectors[,-d, drop = FALSE]
-         # Q2 <- t(svd(Mbeta)$u[,-d, drop = FALSE])
-         # all.equal(rep(0, d-1), c(Q2 %*% beta)) # check orthogonality
-         # all.equal(diag(d-1), tcrossprod(Q2)) # check basis is orthonormal
+         # Q2 <- svd(Mbeta)$u[,-d, drop = FALSE]
+         # all.equal(rep(0, d-1), c(crossprod(Q2, beta))) # check orthogonality
+         # all.equal(diag(d-1), crossprod(Q2)) # check basis is orthonormal
          Qmat <- rbind(beta, t(Q2))
          # covmat <- solve(t(Q2) %*% solve(Omega) %*% Q2)
          covmat <- solve(crossprod(crossprod(backsolve(r = chol(Omega), x = diag(nrow(Omega))), Q2)))
          mu <- sum(beta*xi)
          omega <- sum(beta * c(Omega %*% beta))
+         # Simulate inverse gaussian sum
          Z1 <- statmod::rinvgauss(n = n, mean = mu, shape = mu^2 / omega)
-         rt <- TruncatedNormal::rtmvnorm(n = n, mu = rep(0, d-1), sigma = covmat, check = FALSE)
-         if(is.vector(rt)){ # Convert to a matrix if d=2 or n =1
+         # Simulate d-1 dimensional Gaussian vectors with mean zero and covmat covariance matrix
+         # rt <- TruncatedNormal::rtmvnorm(n = n, mu = rep(0, d - 1), sigma = covmat, check = FALSE)
+         rt <- MASS::mvrnorm(n = n, mu = rep(0, d-1), Sigma = covmat)
+         if(is.vector(rt)){ # Convert to a matrix if d=2 or n=1
           rt <- matrix(rt, nrow = n, ncol = d - 1L)
          }
          Z2 <- sweep(rt, 1, sqrt(Z1), "*")
          Z2 <- sweep(Z2, 2, c(crossprod(Q2, xi)), "+") +
             tcrossprod(Z1 - mu, c(crossprod(Q2, c(Omega %*% beta)/omega)))
          svdQ <- svd(Qmat)
-         Qinv <- svdQ$v %*% t(svdQ$u)/svdQ$d
+         Qinv <- svdQ$v %*% diag(1/svdQ$d) %*% t(svdQ$u)
          return(sweep(t(Qinv %*% t(cbind(Z1, Z2))),
                       MARGIN = 2, STATS = shift, FUN = "+"))
       }
@@ -151,7 +154,6 @@ rmig <- function(n, xi, Omega, beta, shift, method = c("invsim", "bm"),
    }
    return(output_matrix)
 }
-
 
 
 #' Maximum likelihood estimation of multivariate inverse Gaussian vectors
@@ -291,8 +293,11 @@ pmig <- function(q, xi, Omega, beta, log = FALSE, method = c("sov", "mc"), B = 1
    }
    beta <- as.numeric(beta)
    Mbeta <- (diag(d) - tcrossprod(beta)/(sum(beta^2)))
-   Q2 <- t(eigen(Mbeta, symmetric = TRUE)$vectors[,-d, drop = FALSE])
-   Q2 <- matrix(c(-beta[2], beta[1])/sqrt(sum(beta^2)), nrow = 1) # only for d=2
+   if(d > 2){
+      Q2 <- t(eigen(Mbeta, symmetric = TRUE)$vectors[,-d, drop = FALSE])
+   } else if(d == 2){
+      Q2 <- matrix(c(-beta[2], beta[1])/sqrt(sum(beta^2)), nrow = 1) # only for d=2
+   }
    Qmat <- rbind(beta, Q2)
    covmat <- solve(Q2 %*% solve(Omega) %*% t(Q2))
    # Mean and scale of the univariate inverse Gaussian

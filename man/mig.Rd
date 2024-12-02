@@ -63,6 +63,7 @@ beta <- runif(d)
 xi <- rexp(d)
 Omega <- matrix(0.5, d, d) + diag(d)
 samp <- rmig(n = 1000, beta = beta, xi = xi, Omega = Omega)
+stopifnot(isTRUE(all(samp \%*\% beta > 0)))
 mle <- fit_mig(samp, beta = beta, method = "mle")
 set.seed(1234)
 d <- 2L
