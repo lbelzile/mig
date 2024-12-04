@@ -59,7 +59,7 @@ Omega <- matrix(c(2, -1, -1, 2), nrow = 2, ncol = 2)
 dmig(x, xi = xi, Omega = Omega, beta = beta)
 # Random number generation
 d <- 5L
-beta <- runif(d)
+beta <- rexp(d)
 xi <- rexp(d)
 Omega <- matrix(0.5, d, d) + diag(d)
 samp <- rmig(n = 1000, beta = beta, xi = xi, Omega = Omega)

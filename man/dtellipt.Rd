@@ -23,7 +23,7 @@ dtellipt(x, beta, mu, sigma, df, delta = 0, log = FALSE)
 an \code{n} by \code{d} matrix of random vectors
 }
 \description{
-Compute the density of  multivariate Student-t or Gaussian \eqn{\boldsymbol{x}}
+Compute the density of multivariate Student-t or Gaussian \eqn{\boldsymbol{x}}
 with location vector \code{mu}, scale matrix \code{sigma} and  \code{df} (integer) degrees of freedom
 subject to the linear constraint \eqn{\boldsymbol{\beta}^\top\boldsymbol{x} > \delta}.
 Negative degrees of freedom or values larger than 1000 imply Gaussian vectors are generated instead.

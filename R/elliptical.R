@@ -46,7 +46,7 @@ rtellipt <- function(n, beta, mu, sigma, df, delta = 0){
 
 #' Density of elliptical vectors subject to a linear constraint
 #'
-#' Compute the density of  multivariate Student-t or Gaussian \eqn{\boldsymbol{x}}
+#' Compute the density of multivariate Student-t or Gaussian \eqn{\boldsymbol{x}}
 #' with location vector \code{mu}, scale matrix \code{sigma} and  \code{df} (integer) degrees of freedom
 #' subject to the linear constraint \eqn{\boldsymbol{\beta}^\top\boldsymbol{x} > \delta}.
 #' Negative degrees of freedom or values larger than 1000 imply Gaussian vectors are generated instead.
@@ -101,5 +101,41 @@ dtellipt <- function(x, beta, mu, sigma, df, delta = 0, log = FALSE){
    } else{
       return(exp(logd))
    }
-
 }
+
+#' Maximum likelihood estimation of truncated Gaussian on half space
+#'
+#' Given a data matrix and a vector of linear constraints for the half-space,
+#' we compute the maximum likelihood estimator of the location and scale matrix
+#' @param xdat matrix of observations
+#' @param beta vector of constraints defining the half-space
+#' @return a list with location vector \code{loc} and scale matrix \code{scale}
+#' @export
+mle_truncgauss <- function(xdat, beta){
+   n <- NROW(xdat)
+   d <- NCOL(xdat)
+   stopifnot(length(beta) == d)
+   # Numerical optimization with Cholesky root
+   chol2cov <- function(pars, d){
+      stopifnot(length(pars) == d*(d+1)/2)
+      chol <- matrix(0, nrow = d, ncol = d)
+      diag(chol) <- abs(pars[1:d])
+      chol[lower.tri(chol, diag = FALSE)] <- pars[-(1:d)]
+      chol <- t(chol)
+      crossprod(chol)
+   }
+   cov2chol <- function(cov){
+      L <- t(chol(cov))
+      c(abs(diag(L)), L[lower.tri(L, diag = FALSE)])
+   }
+   objfun <- function(pars){
+      mu <- pars[1:d]
+      sigma <- chol2cov(pars[-(1:d)], d = d)
+      - sum(dtellipt(x = xdat, beta = beta, mu = mu, sigma = sigma, df = 0, log = TRUE))
+   }
+   start <- c(colMeans(xdat), cov2chol(cov(xdat)))
+   opt <- optim(par = start, fn = objfun, method = "BFGS", control = list(maxit = 2000))
+   list(loc = opt$par[1:d],
+        scale = chol2cov(opt$par[-(1:d)], d))
+}
+

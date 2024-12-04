@@ -14,8 +14,32 @@ mig_kdens_arma <- function(x, newdata, Omega, beta, logd) {
     .Call(`_mig_mig_kdens_arma`, x, newdata, Omega, beta, logd)
 }
 
+#' Truncated Gaussian kernel density estimator
+#'
+#' Given a data matrix over a half-space defined by \code{beta},
+#' compute the log density of the asymmetric truncated Gaussian kernel density estimator,
+#' taking in turn an observation as location vector.
+#' @inheritParams dmig
+#' @param newdata matrix of new observations at which to evaluated the kernel density
+#' @return the value of the likelihood cross-validation criterion
+#' @keywords internal
 tnorm_kdens_arma <- function(x, newdata, Omega, beta, logd) {
     .Call(`_mig_tnorm_kdens_arma`, x, newdata, Omega, beta, logd)
+}
+
+#' Gaussian kernel density estimator
+#'
+#' Given a data matrix over a half-space defined by \code{beta},
+#' compute the log density of the asymmetric truncated Gaussian kernel density estimator,
+#' taking in turn an observation as location vector.
+#' @param x matrix of observations
+#' @param newdata matrix of new observations at which to evaluated the kernel density
+#' @param Sigma covariance matrix
+#' @param logd logical; if \code{TRUE}, return the log density
+#' @return log density estimator
+#' @keywords internal
+gauss_kdens_arma <- function(x, newdata, Sigma, logweights, logd) {
+    .Call(`_mig_gauss_kdens_arma`, x, newdata, Sigma, logweights, logd)
 }
 
 #' Likelihood cross-validation for kernel density estimation with MIG
@@ -27,11 +51,11 @@ tnorm_kdens_arma <- function(x, newdata, Omega, beta, logd) {
 #' @inheritParams dmig
 #' @return the value of the likelihood cross-validation criterion
 #' @export
-mig_lcv <- function(x, beta, Omega) {
-    .Call(`_mig_mig_lcv`, x, beta, Omega)
+mig_loo <- function(x, beta, Omega) {
+    .Call(`_mig_mig_loo`, x, beta, Omega)
 }
 
-#' Robust likelihood cross-validation for kernel density estimation
+#' Robust likelihood cross-validation for kernel density estimation for MIG
 #'
 #' Given a data matrix over a half-space defined by \code{beta},
 #' compute the log density using leave-one-out cross validation,
@@ -42,11 +66,126 @@ mig_lcv <- function(x, beta, Omega) {
 #' @param dxsamp density of points
 #' @return the value of the likelihood cross-validation criterion
 #' @export
-mig_rlcv <- function(x, beta, Omega, xsamp, dxsamp) {
-    .Call(`_mig_mig_rlcv`, x, beta, Omega, xsamp, dxsamp)
+mig_rlcv <- function(x, beta, Omega, an, xsamp, dxsamp, mckern = TRUE) {
+    .Call(`_mig_mig_rlcv`, x, beta, Omega, an, xsamp, dxsamp, mckern)
 }
 
-mig_lscv <- function(x, beta, Omega, xsamp, dxsamp) {
-    .Call(`_mig_mig_lscv`, x, beta, Omega, xsamp, dxsamp)
+#' Least squares cross-validation for MIG density estimation
+#'
+#' Given a data matrix over a half-space defined by \code{beta},
+#' compute the average using leave-one-out cross validation density minus
+#' half the squared density.
+#' @inheritParams dmig
+#' @inheritParams mig_rlcv
+#' @return the value of the least square cross-validation criterion
+#' @export
+mig_lscv <- function(x, beta, Omega, xsamp, dxsamp, mckern = TRUE) {
+    .Call(`_mig_mig_lscv`, x, beta, Omega, xsamp, dxsamp, mckern)
+}
+
+#' Likelihood cross-validation for Gaussian kernel density estimation
+#'
+#' Given a data matrix, compute the log density using leave-one-out
+#' cross validation, taking in turn an observation as location vector
+#' and computing the density of the resulting mixture.
+#' @param x \code{n} by \code{d} matrix of observations
+#' @param Sigma smoothing positive-definite matrix
+#' @param logweights vector of log weights
+#' @return a vector of values for the weighted leave-one-out likelihood
+#' @export
+gauss_loo <- function(x, Sigma, logweights) {
+    .Call(`_mig_gauss_loo`, x, Sigma, logweights)
+}
+
+#' Likelihood cross-validation for truncated Gaussian kernel density estimation
+#'
+#' Given a data matrix, compute the log density using leave-one-out
+#' cross validation, taking in turn an observation as location vector
+#' and computing the density of the resulting mixture.
+#' @param x \code{n} by \code{d} matrix of observations
+#' @param Sigma smoothing positive-definite matrix
+#' @param beta vector of constraints for the half-space
+#' @return a vector of values for the weighted leave-one-out likelihood
+#' @export
+tnorm_loo <- function(x, Omega, beta) {
+    .Call(`_mig_tnorm_loo`, x, Omega, beta)
+}
+
+#' Likelihood cross-validation for Gaussian kernel density estimation
+#'
+#' Likelihood cross-validation criterion function.
+#' @param x \code{n} by \code{d} matrix of observations
+#' @param Sigma smoothing positive-definite matrix
+#' @param logweights log vector of weights
+#' @return LCV criterion value
+#' @export
+#' @keywords internal
+gauss_lcv <- function(x, Sigma, logweights) {
+    .Call(`_mig_gauss_lcv`, x, Sigma, logweights)
+}
+
+#' Likelihood cross-validation for truncated normal kernel density estimation
+#'
+#' Likelihood cross-validation criterion function.
+#' @param x \code{n} by \code{d} matrix of observations
+#' @param Omega smoothing positive-definite matrix
+#' @param beta vector of constraints for the half-space
+#' @return LCV criterion value
+#' @export
+#' @keywords internal
+tnorm_lcv <- function(x, Omega, beta) {
+    .Call(`_mig_tnorm_lcv`, x, Omega, beta)
+}
+
+#' Least squares cross-validation for Gaussian kernel density estimation
+#'
+#' Least squares cross-validation for weighted Gaussian samples.
+#' @param xsamp \code{n} by \code{d} random sample for Monte Carlo estimation of bias
+#' @param dxsamp \code{n} vector of density for the points from \code{xsamp}
+#' @param mckern logical; if \code{TRUE}, uses the kernel as sampler for Monte Carlo estimation
+#' @inheritParams gauss_lcv
+#' @return least square criterion value
+#' @export
+#' @keywords internal
+gauss_lscv <- function(x, Sigma, logweights, xsamp, dxsamp, mckern = TRUE) {
+    .Call(`_mig_gauss_lscv`, x, Sigma, logweights, xsamp, dxsamp, mckern)
+}
+
+#' Least squares cross-validation for truncated Gaussian kernel density estimation
+#'
+#' Least squares cross-validation for truncated Gaussian samples.
+#' @inheritParams gauss_lscv
+#' @inheritParams tnorm_lcv
+#' @return least square criterion value
+#' @export
+#' @keywords internal
+tnorm_lscv <- function(x, Omega, beta, xsamp, dxsamp, mckern = TRUE) {
+    .Call(`_mig_tnorm_lscv`, x, Omega, beta, xsamp, dxsamp, mckern)
+}
+
+#' Robust likelihood cross-validation for Gaussian kernel density estimation
+#'
+#' Robust likelihood cross-validation criterion function of Wu.
+#' @inheritParams gauss_lscv
+#' @inheritParams gauss_lcv
+#' @param an threshold for linear approximation
+#' @return RLCV criterion value
+#' @export
+#' @keywords internal
+gauss_rlcv <- function(x, Sigma, logweights, an, xsamp, dxsamp, mckern = TRUE) {
+    .Call(`_mig_gauss_rlcv`, x, Sigma, logweights, an, xsamp, dxsamp, mckern)
+}
+
+#' Likelihood cross-validation for truncated normal kernel density estimation
+#'
+#' Robust likelihood cross-validation criterion function.
+#' @inheritParams gauss_lscv
+#' @inheritParams tnorm_lcv
+#' @param an threshold for linear approximation
+#' @return RLCV criterion value
+#' @export
+#' @keywords internal
+tnorm_rlcv <- function(x, Omega, beta, an, xsamp, dxsamp, mckern = TRUE) {
+    .Call(`_mig_tnorm_rlcv`, x, Omega, beta, an, xsamp, dxsamp, mckern)
 }
 
