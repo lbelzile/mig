@@ -150,7 +150,7 @@ Rcpp::NumericVector gauss_kdens_arma(arma::mat x, arma::mat newdata, arma::mat S
 }
 
 
-//' Likelihood cross-validation for kernel density estimation with MIG
+//' Leave-one-out cross-validation for kernel density estimation with MIG
 //'
 //' Given a data matrix over a half-space defined by \code{beta},
 //' compute the log density using leave-one-out cross validation,
@@ -159,8 +159,9 @@ Rcpp::NumericVector gauss_kdens_arma(arma::mat x, arma::mat newdata, arma::mat S
 //' @inheritParams dmig
 //' @return the value of the likelihood cross-validation criterion
 //' @export
+//' @keywords internal
 // [[Rcpp::export]]
-arma::colvec mig_loo(arma::mat x, arma::colvec beta, arma::mat Omega) {
+arma::colvec mig_loo(arma::mat x, arma::mat Omega, arma::colvec beta) {
  arma::mat cholinv = chol(Omega.i());
  arma::uword d = x.n_cols;
  arma::uword n = x.n_rows;
@@ -225,6 +226,7 @@ arma::colvec mig_loo(arma::mat x, arma::colvec beta, arma::mat Omega) {
 //' @param dxsamp density of points
 //' @return the value of the likelihood cross-validation criterion
 //' @export
+//' @keywords internal
 // [[Rcpp::export]]
 double mig_rlcv(arma::mat x, arma::colvec beta, arma::mat Omega, double an,
                arma::mat xsamp, arma::vec dxsamp, bool mckern = true) {
@@ -323,6 +325,7 @@ double mig_rlcv(arma::mat x, arma::colvec beta, arma::mat Omega, double an,
 //' @inheritParams mig_rlcv
 //' @return the value of the least square cross-validation criterion
 //' @export
+//' @keywords internal
 // [[Rcpp::export]]
 double mig_lscv(arma::mat x, arma::colvec beta, arma::mat Omega,
                arma::mat xsamp, arma::vec dxsamp, bool mckern = true) {
@@ -399,7 +402,7 @@ double mig_lscv(arma::mat x, arma::colvec beta, arma::mat Omega,
 
 
 
-//' Likelihood cross-validation for Gaussian kernel density estimation
+//' Leave-one-out cross-validation for Gaussian kernel density estimation
 //'
 //' Given a data matrix, compute the log density using leave-one-out
 //' cross validation, taking in turn an observation as location vector
@@ -408,6 +411,7 @@ double mig_lscv(arma::mat x, arma::colvec beta, arma::mat Omega,
 //' @param Sigma smoothing positive-definite matrix
 //' @param logweights vector of log weights
 //' @return a vector of values for the weighted leave-one-out likelihood
+//' @keywords internal
 //' @export
 // [[Rcpp::export]]
 arma::colvec gauss_loo(arma::mat x, arma::mat Sigma, arma::vec logweights) {
@@ -459,7 +463,7 @@ arma::colvec gauss_loo(arma::mat x, arma::mat Sigma, arma::vec logweights) {
 }
 
 
-//' Likelihood cross-validation for truncated Gaussian kernel density estimation
+//' Leave-one-out cross-validation for truncated Gaussian kernel density estimation
 //'
 //' Given a data matrix, compute the log density using leave-one-out
 //' cross validation, taking in turn an observation as location vector
@@ -468,6 +472,7 @@ arma::colvec gauss_loo(arma::mat x, arma::mat Sigma, arma::vec logweights) {
 //' @param Sigma smoothing positive-definite matrix
 //' @param beta vector of constraints for the half-space
 //' @return a vector of values for the weighted leave-one-out likelihood
+//' @keywords internal
 //' @export
 // [[Rcpp::export]]
 arma::colvec tnorm_loo(arma::mat x, arma::mat Omega, arma::vec beta) {
@@ -530,7 +535,19 @@ arma::colvec tnorm_loo(arma::mat x, arma::mat Omega, arma::vec beta) {
  }
 
 
-
+//' Likelihood cross-validation for MIG density estimation
+//'
+//' Likelihood cross-validation criterion function.
+//' @param x \code{n} by \code{d} matrix of observations
+//' @inheritParams dmig
+//' @return LCV criterion value
+//' @keywords internal
+//' @export
+// [[Rcpp::export]]
+double mig_lcv(arma::mat x, arma::mat Omega, arma::vec beta){
+   double objective = mean(mig_loo(x, Omega, beta));
+   return objective;
+}
 
 //' Likelihood cross-validation for Gaussian kernel density estimation
 //'
@@ -580,7 +597,7 @@ double gauss_lscv(arma::mat x, arma::mat Sigma, arma::vec logweights,
       objective += mean(gauss_kdens_arma(x, x, Sigma, logweights, false));
    } else{
       arma::vec f_x = gauss_kdens_arma(x, xsamp, Sigma, logweights, false);
-      objective += mean(f_x*f_x/dxsamp);
+      objective += mean(f_x%f_x/dxsamp);
    }
    return objective;
 }
@@ -601,7 +618,7 @@ double tnorm_lscv(arma::mat x, arma::mat Omega, arma::vec beta,
       objective += mean(tnorm_kdens_arma(x, x, Omega, beta, false));
    } else{
       arma::vec f_x = tnorm_kdens_arma(x, xsamp, Omega, beta, false);
-      objective += mean(f_x*f_x/dxsamp);
+      objective += mean(f_x%f_x/dxsamp);
    }
    return objective;
 }
@@ -711,3 +728,95 @@ double tnorm_rlcv(arma::mat x, arma::mat Omega, arma::vec beta, double an,
    objective = objective / n - bias;
    return objective;
 }
+
+
+
+//' Likelihood cross-validation for truncated normal kernel density estimation
+ //'
+ //' Robust likelihood cross-validation criterion function.
+ //' @inheritParams gauss_lscv
+ //' @inheritParams tnorm_lcv
+ //' @param an threshold for linear approximation
+ //' @return RLCV criterion value
+ //' @export
+ //' @keywords internal
+ // [[Rcpp::export]]
+double mig2_rlcv(arma::mat x, arma::mat Omega, arma::vec beta, double an,
+                   arma::mat xsamp, arma::vec dxsamp, bool mckern = true){
+    arma::uword n = x.n_rows;
+    arma::vec logf_ix = mig_loo(x, Omega, beta);
+    double logan = log(an);
+    double objective = 0;
+    for(arma::uword i = 0; i < n; i++){
+       if(logf_ix(i) >= logan){
+          objective += logf_ix(i);
+       } else{
+          objective += logan - 1 + exp(logf_ix(i) - logan);
+       }
+    }
+    double bias = 0;
+    if(mckern){
+       arma::vec f_x = mig_kdens_arma(x, x, Omega, beta, false);
+       for(arma::uword i = 0; i < n; i++){
+          if(f_x(i) >= an){
+             bias += 1;
+          } else{
+             bias += f_x(i)*0.5/an;
+          }
+       }
+       bias = bias / ((double) n);
+    } else{
+       if(xsamp.n_rows != dxsamp.n_rows){
+          Rcpp::stop("Invalid Monte Carlo sample or density.");
+       }
+       arma::vec f_x = mig_kdens_arma(x, xsamp, Omega, beta, false);
+       for(arma::uword i = 0; i < xsamp.n_rows; i++){
+          if(f_x(i) >= an){
+             bias += f_x(i)/dxsamp(i);
+          } else{
+             bias += f_x(i)*f_x(i)*0.5/(dxsamp(i)*an);
+          }
+       }
+       bias = bias / ((double) xsamp.n_rows);
+    }
+    objective = objective / n - bias;
+    return objective;
+ }
+
+
+//' Least squares cross-validation for MIG kernel density estimation
+ //'
+ //' Least squares cross-validation for multivariate inverse Gaussian samples.
+ //' @inheritParams gauss_lscv
+ //' @inheritParams tnorm_lcv
+ //' @return least square criterion value
+ //' @export
+ //' @keywords internal
+ // [[Rcpp::export]]
+double mig2_lscv(arma::mat x, arma::mat Omega, arma::vec beta,
+                   arma::mat xsamp, arma::vec dxsamp, bool mckern = true){
+    double objective = -2*mean(exp(mig_loo(x, Omega, beta)));
+    if(mckern){
+       objective += mean(mig_kdens_arma(x, x, Omega, beta, false));
+    } else{
+       arma::vec f_x = mig_kdens_arma(x, xsamp, Omega, beta, false);
+       objective += mean(f_x%f_x/dxsamp);
+    }
+    return objective;
+ }
+
+
+//' Likelihood cross-validation for MIG kernel density estimation
+ //'
+ //' Likelihood cross-validation criterion function.
+ //' @param x \code{n} by \code{d} matrix of observations
+ //' @param Omega smoothing positive-definite matrix
+ //' @param beta vector of constraints for the half-space
+ //' @return LCV criterion value
+ //' @export
+ //' @keywords internal
+ // [[Rcpp::export]]
+ double mig2_lcv(arma::mat x, arma::mat Omega, arma::vec beta){
+    double objective = mean(mig_loo(x, Omega, beta));
+    return objective;
+ }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{gauss_loo}
 \alias{gauss_loo}
-\title{Likelihood cross-validation for Gaussian kernel density estimation}
+\title{Leave-one-out cross-validation for Gaussian kernel density estimation}
 \usage{
 gauss_loo(x, Sigma, logweights)
 }
@@ -21,3 +21,4 @@ Given a data matrix, compute the log density using leave-one-out
 cross validation, taking in turn an observation as location vector
 and computing the density of the resulting mixture.
 }
+\keyword{internal}

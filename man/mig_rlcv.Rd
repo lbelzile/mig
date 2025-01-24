@@ -26,3 +26,4 @@ compute the log density using leave-one-out cross validation,
 taking in turn an observation as location vector and computing the
 density of the resulting mixture.
 }
+\keyword{internal}

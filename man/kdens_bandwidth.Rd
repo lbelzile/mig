@@ -10,11 +10,11 @@ kdens_bandwidth(
   shift,
   family = c("mig", "hsgauss", "tnorm"),
   method = c("amise", "lcv", "lscv", "rlcv"),
-  type = c("isotropic", "full"),
+  type = c("isotropic", "diag", "full"),
   approx = c("kernel", "mig", "tnorm"),
   transformation = c("none", "scaling", "spherical"),
   N = 10000L,
-  buffer = 0.25,
+  buffer = 0,
   pointwise = NULL,
   maxiter = 2000L,
   ...
@@ -33,7 +33,7 @@ kdens_bandwidth(
 
 \item{type}{string indicating whether to compute an isotropic model or estimate the optimal scale matrix via optimization}
 
-\item{approx}{string; distribution to approximate the true density function \eqn{f(x)}; either \code{kernel} for the kernel estimator or \code{mig} for multivariate inverse Gaussian.}
+\item{approx}{string; distribution to approximate the true density function \eqn{f(x)}; either \code{kernel} for the kernel estimator evaluated at the sample points (except for \code{method="amise"}, which isn't supported),  \code{mig} for multivariate inverse Gaussian with the method of moments or \code{tnorm} for the multivariate truncated Gaussian evaluated by maximum likelihood.}
 
 \item{transformation}{string for optional scaling of the data before computing the bandwidth. Either standardization to unit variance \code{scaling}, spherical transformation to unit variance and zero correlation (\code{spherical}), or \code{none} (default).}
 

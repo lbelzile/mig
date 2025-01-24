@@ -2,16 +2,16 @@
 % Please edit documentation in R/RcppExports.R
 \name{mig_loo}
 \alias{mig_loo}
-\title{Likelihood cross-validation for kernel density estimation with MIG}
+\title{Leave-one-out cross-validation for kernel density estimation with MIG}
 \usage{
-mig_loo(x, beta, Omega)
+mig_loo(x, Omega, beta)
 }
 \arguments{
 \item{x}{\code{n} by \code{d} matrix of quantiles}
 
-\item{beta}{\code{d} vector \eqn{\boldsymbol{\beta}} defining the half-space through \eqn{\boldsymbol{\beta}^{\top}\boldsymbol{\xi}>0}}
-
 \item{Omega}{\code{d} by \code{d} positive definite scale matrix \eqn{\boldsymbol{\Omega}}}
+
+\item{beta}{\code{d} vector \eqn{\boldsymbol{\beta}} defining the half-space through \eqn{\boldsymbol{\beta}^{\top}\boldsymbol{\xi}>0}}
 }
 \value{
 the value of the likelihood cross-validation criterion
@@ -22,3 +22,4 @@ compute the log density using leave-one-out cross validation,
 taking in turn an observation as location vector and computing the
 density of the resulting mixture.
 }
+\keyword{internal}

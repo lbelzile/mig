@@ -16,7 +16,7 @@
 #' @param family distribution for smoothing, either \code{mig} for multivariate inverse Gaussian, \code{tnorm} for truncated normal on the half-space and \code{hsgauss} for the Gaussian smoothing after suitable transformation.
 #' @param method estimation criterion, either \code{amise} for the expression that minimizes the asymptotic integrated squared error, \code{lcv} for likelihood (leave-one-out) cross-validation, \code{lscv} for least-square cross-validation or \code{rlcv} for robust cross validation of Wu (2019)
 #' @param N integer number of simulations for Monte Carlo integration
-#' @param approx string; distribution to approximate the true density function \eqn{f(x)}; either \code{kernel} for the kernel estimator or \code{mig} for multivariate inverse Gaussian.
+#' @param approx string; distribution to approximate the true density function \eqn{f(x)}; either \code{kernel} for the kernel estimator evaluated at the sample points (except for \code{method="amise"}, which isn't supported),  \code{mig} for multivariate inverse Gaussian with the method of moments or \code{tnorm} for the multivariate truncated Gaussian evaluated by maximum likelihood.
 #' @param transformation string for optional scaling of the data before computing the bandwidth. Either standardization to unit variance \code{scaling}, spherical transformation to unit variance and zero correlation (\code{spherical}), or \code{none} (default).
 #' @param pointwise if \code{NULL}, evaluates the mean integrated squared error, otherwise a \code{d} vector to evaluate the bandwidth or scale pointwise
 #' @param maxiter integer; max number of iterations in the call to \code{optim}.
@@ -34,11 +34,11 @@ kdens_bandwidth<- function(
       shift,
       family = c("mig","hsgauss","tnorm"),
       method = c("amise", "lcv", "lscv", "rlcv"),
-      type = c("isotropic", "full"),
+      type = c("isotropic", "diag", "full"),
       approx = c("kernel", "mig", "tnorm"),
       transformation = c("none", "scaling", "spherical"),
       N = 1e4L,
-      buffer = 0.25,
+      buffer = 0,
       pointwise = NULL,
       maxiter = 2e3L,
       ...){
@@ -100,7 +100,11 @@ kdens_bandwidth<- function(
      L <- t(chol(cov))
      c(abs(diag(L)), L[lower.tri(L, diag = FALSE)])
    }
-   start <- cov2chol(n^(-1/(d+2)) * cov(x))
+   if(type == "full"){
+     start <- cov2chol(n^(-1/(d+2)) * cov(x))
+   } else if(type == "diag"){
+      start <- log(n^(-1/(d+2)) * diag(cov(x)))
+   }
    if(method == "amise"){
       if(family != "mig"){
        stop("Invalid option for the chosen \"family\".")
@@ -118,12 +122,14 @@ kdens_bandwidth<- function(
          samp <- matrix(pointwise, ncol = d)
       } else{
          if(approx == "mig"){
-           samp <- rmig(n = N, xi = estim$xi, Omega = estim$Omega, beta = beta)
+           samp <- rmig(n = N, xi = estim$xi,
+                        Omega = estim$Omega, beta = beta)
          } else if(approx == "tnorm"){
            samp <- rtellipt(n = N, beta = beta, mu = estim$loc,
                             sigma = estim$scale, delta = buffer)
          } else{
-           stop("Invalid method") # this should not get executed
+           # approx must be 'kernel'
+         stop("Invalid method") # this should not get executed
          }
       }
       xbeta <- c(samp %*% beta)
@@ -144,7 +150,7 @@ kdens_bandwidth<- function(
                                  dtellipt(x = samp,  mu = estim$mu, sigma = estim$sigma, beta = beta, delta = buffer, log = FALSE)))^(1/(d+4))
          }
       return(diag(rep(hopt, d)))
-      } else if(type == "full"){
+      } else {
           if(approx == "mig"){
          gradients <- mig_loglik_grad(x = samp, beta = beta, xi = estim$xi, Omega = estim$Omega)
          hessians <- mig_loglik_hessian(x = samp, beta = beta, xi = estim$xi, Omega = estim$Omega)
@@ -163,12 +169,21 @@ kdens_bandwidth<- function(
             logdens <- dtellipt(x = samp, beta = beta, mu = estim$mu, sigma = estim$sigma, delta = buffer, log = TRUE)
          }
          logscalefact <- logdens + 2*logxbeta
+         if(type == "full"){
        optfun <- function(pars, ...){
           Hmat <- chol2cov(pars, d = d)
           exp(-0.5*determinant(Hmat)$modulus - log(n)) * int1 +
              mean(exp(2*log(abs(apply(hessians, 1, function(x){sum(Hmat * x)}))) + logscalefact))/4
 
        }
+         } else if(type == "diag"){
+            optfun <- function(pars, ...){
+               Hmat <- diag(exp(pars))
+               exp(-0.5*determinant(Hmat)$modulus - log(n)) * int1 +
+                  mean(exp(2*log(abs(apply(hessians, 1, function(x){sum(Hmat * x)}))) + logscalefact))/4
+
+            }
+         }
        # Test different optimization routines
        if (!requireNamespace("minqa", quietly = TRUE)) {
            optH <- optim(par = start,
@@ -180,11 +195,14 @@ kdens_bandwidth<- function(
                              fn = optfun,
                              control = list(maxfun = maxiter))
        }
-       return(chol2cov(optH$par, d = d))
+         if(type == "full"){
+            return(chol2cov(optH$par, d = d))
+         } else{
+            return(diag(exp(optH$par)))
+         }
       }
    } else if(method %in% c("lcv", "lscv", "rlcv")){
       if(family == "hsgauss"){
-
          Mbeta <- (diag(d) - tcrossprod(beta)/(sum(beta^2)))
          if(d > 2){
             Q2 <- t(eigen(Mbeta, symmetric = TRUE)$vectors[,-d, drop = FALSE])
@@ -196,20 +214,21 @@ kdens_bandwidth<- function(
          # isTRUE(all.equal(diag(d), tcrossprod(Qmat)))
          map <- function(x){
             tx <- t(tcrossprod(Qmat, x))
-            tx[,1] <- exp(tx[,1])
+            tx[,1] <- log(tx[,1])
             return(tx)
          }
          tx <- map(x)
          # Jacobian of transformation to Rd, akin to a weighting scheme
-         logweights <- -log(tx[,1])
+         logweights <- -tx[,1]
       }
-
       if(method == "lcv"){
         optfun2 <- function(pars, x, xsamp, dxsamp, ...){
          if(length(pars) == 1L){
             Hmat <- exp(pars[1])*diag(d)
          } else if(length(pars) == d*(d+1)/2){
             Hmat <- chol2cov(pars = pars, d = d)
+         } else if(length(pars) == d){
+            Hmat <- diag(exp(pars))
          }
          # -mean(sapply(seq_len(n), function(i){
          #    .lsum(dmig(x[-i, ,drop = FALSE],
@@ -242,6 +261,7 @@ kdens_bandwidth<- function(
             dsamp <- dtellipt(x = samp, beta = beta, mu = estim$loc,
                               sigma = estim$scale, delta = buffer, log = FALSE)
          } else{
+            # Use the kernel estimator with the sample to approximate the integral
             xsamp <- matrix(0, nrow = 1, ncol = d)
             dxsamp <- 0
          }
@@ -252,6 +272,8 @@ kdens_bandwidth<- function(
                Hmat <- exp(pars[1])*diag(d)
             } else if(length(pars) == d*(d+1)/2){
                Hmat <- chol2cov(pars = pars, d = d)
+            } else if(length(pars) == d){
+              Hmat <- diag(exp(pars))
             }
             if(family == "mig"){
                - mig_rlcv(x = x, beta = beta, Omega = Hmat, xsamp = xsamp, an = a,
@@ -270,6 +292,8 @@ kdens_bandwidth<- function(
                Hmat <- exp(pars[1])*diag(d)
             } else if(length(pars) == d*(d+1)/2){
                Hmat <- chol2cov(pars = pars, d = d)
+            } else if(length(pars) == d){
+               Hmat <- diag(exp(pars))
             }
             # fx <- mig_kdens_arma(x = x,
             #                      newdata = xsamp,
@@ -316,7 +340,7 @@ kdens_bandwidth<- function(
       } else{
          return(diag(d) * exp(opt$par))
       }
-      } else if(type == "full"){
+      } else {
          if (!requireNamespace("minqa", quietly = TRUE)) {
             optH <- optim(par = start,
                         fn = optfun2,
@@ -337,7 +361,11 @@ kdens_bandwidth<- function(
          if(optH$convergence != 0){
             warning("Optimization of bandwidth matrix did not converge.")
          }
-         return(chol2cov(optH$par, d = d))
+         if(type == "full"){
+           return(chol2cov(optH$par, d = d))
+         } else if(type == "diag"){
+            return(diag(exp(optH$par)))
+         }
       }
    }
 }
@@ -390,6 +418,7 @@ tnorm_kdens <- function(x, newdata, Sigma, beta, log = TRUE, ...){
 #' @export
 hsgauss_kdens <- function(x, newdata, Sigma, beta, log = TRUE, ...){
    beta <- as.numeric(beta)
+   d <- length(beta)
    Mbeta <- (diag(d) - tcrossprod(beta)/(sum(beta^2)))
    if(d > 2){
       Q2 <- t(eigen(Mbeta, symmetric = TRUE)$vectors[,-d, drop = FALSE])
@@ -402,13 +431,17 @@ hsgauss_kdens <- function(x, newdata, Sigma, beta, log = TRUE, ...){
    # isTRUE(all.equal(diag(d), tcrossprod(Qmat)))
    map <- function(x){
       tx <- t(tcrossprod(Qmat, x))
-      tx[,1] <- exp(tx[,1])
+      tx[,1] <- suppressWarnings(log(tx[,1]))
       return(tx)
    }
    tx <- map(x)
    # Jacobian of transformation to Rd, akin to a weighting scheme
-   logjac <- -log(tx[,1]) # det(Qmat) = 1
-   logd <- gauss_kdens_arma(x = tx, newdata = tnewdata, Sigma = Sigma, logweights = logjac, logd = TRUE)
+   logjac <- -tx[,1] # det(Qmat) = 1
+   tnd <- map(newdata)
+   admis <- is.finite(tnd[,1])
+   logd <- rep(-Inf, nrow(tnd))
+   logd[admis] <- gauss_kdens_arma(x = tx, newdata = tnd[admis,,drop=FALSE],
+                                   Sigma = Sigma, logweights = logjac, logd = TRUE)
    if(isTRUE(log)){
       return(logd)
    } else{

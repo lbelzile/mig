@@ -41,7 +41,10 @@ rtellipt <- function(n, beta, mu, sigma, df, delta = 0){
          sigma = Amat %*% sigma %*% t(Amat),
          lb = c(delta, rep(-Inf, d-1)))
    }
-   cbind(c(solve(Amat)[1,] %*% t(samp)), samp[,-1])
+   if(n == 1L & is.vector(samp)){
+      samp <- matrix(samp, ncol = d)
+   }
+   cbind(c(solve(Amat)[1,, drop = FALSE] %*% t(samp)), samp[,-1, drop = FALSE])
 }
 
 #' Density of elliptical vectors subject to a linear constraint

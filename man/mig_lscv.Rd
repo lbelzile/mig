@@ -25,3 +25,4 @@ Given a data matrix over a half-space defined by \code{beta},
 compute the average using leave-one-out cross validation density minus
 half the squared density.
 }
+\keyword{internal}
