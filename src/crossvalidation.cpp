@@ -592,12 +592,12 @@ double tnorm_lcv(arma::mat x, arma::mat Omega, arma::vec beta){
 // [[Rcpp::export]]
 double gauss_lscv(arma::mat x, arma::mat Sigma, arma::vec logweights,
                   arma::mat xsamp, arma::vec dxsamp, bool mckern = true){
-   double objective = -2*mean(exp(gauss_loo(x, Sigma, logweights)));
+   double objective = 2*mean(exp(gauss_loo(x, Sigma, logweights)));
    if(mckern){
-      objective += mean(gauss_kdens_arma(x, x, Sigma, logweights, false));
+      objective -= mean(gauss_kdens_arma(x, x, Sigma, logweights, false));
    } else{
       arma::vec f_x = gauss_kdens_arma(x, xsamp, Sigma, logweights, false);
-      objective += mean(f_x%f_x/dxsamp);
+      objective -= mean(f_x%f_x/dxsamp);
    }
    return objective;
 }
@@ -613,12 +613,12 @@ double gauss_lscv(arma::mat x, arma::mat Sigma, arma::vec logweights,
 // [[Rcpp::export]]
 double tnorm_lscv(arma::mat x, arma::mat Omega, arma::vec beta,
                   arma::mat xsamp, arma::vec dxsamp, bool mckern = true){
-   double objective = -2*mean(exp(tnorm_loo(x, Omega, beta)));
+   double objective = 2*mean(exp(tnorm_loo(x, Omega, beta)));
    if(mckern){
-      objective += mean(tnorm_kdens_arma(x, x, Omega, beta, false));
+      objective -= mean(tnorm_kdens_arma(x, x, Omega, beta, false));
    } else{
       arma::vec f_x = tnorm_kdens_arma(x, xsamp, Omega, beta, false);
-      objective += mean(f_x%f_x/dxsamp);
+      objective -= mean(f_x%f_x/dxsamp);
    }
    return objective;
 }
@@ -795,12 +795,12 @@ double mig2_rlcv(arma::mat x, arma::mat Omega, arma::vec beta, double an,
  // [[Rcpp::export]]
 double mig2_lscv(arma::mat x, arma::mat Omega, arma::vec beta,
                    arma::mat xsamp, arma::vec dxsamp, bool mckern = true){
-    double objective = -2*mean(exp(mig_loo(x, Omega, beta)));
+    double objective = 2*mean(exp(mig_loo(x, Omega, beta)));
     if(mckern){
-       objective += mean(mig_kdens_arma(x, x, Omega, beta, false));
+       objective -= mean(mig_kdens_arma(x, x, Omega, beta, false));
     } else{
        arma::vec f_x = mig_kdens_arma(x, xsamp, Omega, beta, false);
-       objective += mean(f_x%f_x/dxsamp);
+       objective -= mean(f_x%f_x/dxsamp);
     }
     return objective;
  }

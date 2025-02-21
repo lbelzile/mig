@@ -28,7 +28,7 @@
 #' Bowman, A.W. (1984). An alternative method of cross-validation for the smoothing of density estimates, \emph{Biometrika}, 71(\bold{2}), 353–360. \doi{10.1093/biomet/71.2.353}
 #' Rudemo, M. (1982). Empirical choice of histograms and kernel density estimators. \emph{Scandinavian Journal of Statistics}, 9(\bold{2}), 65–78. http://www.jstor.org/stable/4615859
 #' @export
-kdens_bandwidth<- function(
+kdens_bandwidth <- function(
       x,
       beta,
       shift,
@@ -44,6 +44,8 @@ kdens_bandwidth<- function(
       ...){
    maxiter <- max(as.integer(maxiter), 1e4L, na.rm = TRUE)
    transformation <- match.arg(transformation)
+   method <- match.arg(method)
+   family <- match.arg(family)
    approx <- match.arg(approx)
    mckern <- isTRUE(approx == "kernel")
    if(transformation %in% c("scaling","spherical")){
@@ -243,28 +245,32 @@ kdens_bandwidth<- function(
             -gauss_lcv(x = tx, Sigma = Hmat, logweights = logweights)
          }
       }
-      } else { # method = least squares or robust
+      } else { # method = either least squares or robust
          covX <- cov(x)
          n <- nrow(x)
          if(approx == "mig"){
             estim <- .mig_mom(x = x, beta = beta)
+            xsamp <- rmig(n = N, xi = estim$xi, Omega = estim$Omega, beta = beta)
+            dxsamp <- dmig(x = xsamp, xi = estim$xi, Omega = estim$Omega,
+                           beta = beta, log = FALSE)
          } else if(approx == "tnorm"){
-            estim <- mle_truncgauss(x)
-         }
-         if(approx == "mig"){
-            samp <- rmig(n = N, xi = estim$xi, Omega = estim$Omega, beta = beta)
-            dsamp <- dmig(x = samp, xi = estim$xi, Omega = estim$Omega,
-                          beta = beta, log = FALSE)
-         } else if(approx == "tnorm"){
-            samp <- rtellipt(n = N, beta = beta, mu = estim$loc,
-                             sigma = estim$scale, delta = buffer)
-            dsamp <- dtellipt(x = samp, beta = beta, mu = estim$loc,
-                              sigma = estim$scale, delta = buffer, log = FALSE)
-         } else{
+            estim <- mle_truncgauss(x, beta = beta)
+            xsamp <- rtellipt(n = N, beta = beta, mu = estim$loc,
+                              sigma = estim$scale, delta = buffer)
+            dxsamp <- dtellipt(x = xsamp, beta = beta, mu = estim$loc,
+                               sigma = estim$scale, delta = buffer, log = FALSE)
+         } else if(approx == "kernel"){
             # Use the kernel estimator with the sample to approximate the integral
             xsamp <- matrix(0, nrow = 1, ncol = d)
             dxsamp <- 0
          }
+         if(family == "hsgauss" && !approx == "kernel"){
+          # TODO need to modify to have a sample on Rd
+            Pm <- proj_hs(beta)
+            xsamp <- xsamp * Pm
+            xsamp[,1] <- log(xsamp[,1])
+         }
+
          if(method == "rlcv"){
             a <- an(x = x)
          optfun2 <- function(pars, x, xsamp, dxsamp, ...){
@@ -308,7 +314,7 @@ kdens_bandwidth<- function(
             #               Omega = Hmat, beta = beta, log = TRUE))
             # }) - log(n-1))) - bias
             if(family == "mig"){
-            -mig_lscv(x = x, beta = beta, Omega = Hmat, xsamp = xsamp,
+              -mig2_lscv(x = x, beta = beta, Omega = Hmat, xsamp = xsamp,
                              dxsamp = dxsamp, mckern = mckern)
             } else if(family == "tnorm"){
                -tnorm_lscv(x = x, beta = beta, Omega = Hmat, xsamp = xsamp,
@@ -328,8 +334,8 @@ kdens_bandwidth<- function(
                control = list(maxit = maxiter),
                method = "Brent",
                x = x,
-               xsamp = samp,
-               dxsamp = dsamp,
+               xsamp = xsamp,
+               dxsamp = dxsamp,
                lower = -20, upper = 5))
       if(isTRUE(opt$convergence == 0)){
             convergence <- TRUE
@@ -345,16 +351,16 @@ kdens_bandwidth<- function(
             optH <- optim(par = start,
                         fn = optfun2,
                         x = x,
-                        xsamp = samp,
-                        dxsamp = dsamp,
+                        xsamp = xsamp,
+                        dxsamp = dxsamp,
                         method = "Nelder-Mead",
                         control = list(maxit = maxiter))
         } else{
          optH <- minqa::newuoa(par = start,
                                fn = optfun2,
                                x = x,
-                               xsamp = samp,
-                               dxsamp = dsamp,
+                               xsamp = xsamp,
+                               dxsamp = dxsamp,
                                control = list(maxfun = maxiter))
          optH$convergence <- optH$ierr
         }
@@ -478,3 +484,47 @@ an <- function(x){
    sigma <- cov(x)
  exp(-0.5*as.numeric(determinant(sigma)$modulus) - (d/2)*log(2*pi) + lgamma(d/2) + (1-d/2)*log(log(n)) - log(n))
 }
+
+#' Orthogonal projection matrix onto the half-space
+#'
+#' The orthogonal projection matrix \eqn{P} has unit determinant and
+#' transforms an \code{n} by \code{d} matrix by taking \eqn{x * P}.
+#' The components of the first column vector of the resulting matrix are strictly positive.
+#' @param beta vector defining the half-space
+#' @param inv logical; if \code{TRUE}, return the inverse matrix
+#' @return a \code{d} by \code{d} orthogonal projection matrix
+#' @export
+proj_hs <- function(beta, inv = FALSE){
+   beta <- as.numeric(beta)
+   stopifnot(length(inv) == 1L, is.logical(inv))
+   d <- length(beta)
+   Mbeta <- (diag(d) - tcrossprod(beta)/(sum(beta^2)))
+   if(d > 2){
+      Q2 <- t(eigen(Mbeta, symmetric = TRUE)$vectors[,-d, drop = FALSE])
+   } else if(d == 2){
+      Q2 <- matrix(c(-beta[2], beta[1])/sqrt(sum(beta^2)), nrow = 1) # only for d=2
+   }
+   Qmat <- t(rbind(beta/sqrt(sum(beta^2)), Q2)) # better to standardize
+   if(inv){
+      return(t(Qmat)) # Orthogonal projection matrix!
+   } else{
+      return(Qmat)
+   }
+}
+
+# #' Maximum likelihood of Gaussian for transformed data rotated from half-space
+# #'
+# #' Given a sample on the half-space, compute a rotation of the data alongside the Jacobian
+# #' and returns the weighted
+# #'
+# #' @param x an \code{n} by \code{d} matrix of observations on half-space
+# #' @param beta \code{d} vector of constraints defining the half-space
+# #' @return a list with elements \code{mean} and \code{vcov} giving the weighted mean and scale matrix for the Gaussian approximation
+# mle_hsgauss <- function(x, beta){
+#     stopifnot(is.matrix(x), ncol(x) == length(beta))
+#     P <- proj_hs(beta)
+#     tx <- x %*% P
+#     weights <- 1/tx[,1]
+#     tx[,1] <- log(tx[,1])
+#     list(mean = weighted.mean(x = tx, w = weights), vcov = cov.wt(x = tx, wt = weights))
+# }
