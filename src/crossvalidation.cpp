@@ -31,7 +31,7 @@ Rcpp::NumericVector mig_kdens_arma(arma::mat x, arma::mat newdata, arma::mat Ome
    Rcpp::stop("Invalid \"x\" matrix input: some entries are not points in the half space.");
  }
  arma::colvec temp_container(x.n_rows);
- arma::mat cholinv = chol(Omega.i());
+ arma::mat cholinv = chol(inv_sympd(Omega));
  // Container for log density
  Rcpp::NumericVector logdens(n);
  double logcst = -0.5*d*log(2*arma::datum::pi) + sum(log(cholinv.diag()));
@@ -82,7 +82,7 @@ Rcpp::NumericVector tnorm_kdens_arma(arma::mat x, arma::mat newdata, arma::mat O
    Rcpp::stop("Invalid \"x\" matrix input: some entries are not points in the half space.");
  }
  arma::colvec temp_container(x.n_rows);
- arma::mat cholinv = chol(Omega.i());
+ arma::mat cholinv = chol(inv_sympd(Omega));
  // Container for log density
  Rcpp::NumericVector logdens(n);
  double logcst = -0.5*d*log(2*arma::datum::pi) + sum(log(cholinv.diag()));
@@ -131,7 +131,7 @@ Rcpp::NumericVector gauss_kdens_arma(arma::mat x, arma::mat newdata, arma::mat S
     Rcpp::stop("Invalid weight vector.");
  }
  arma::colvec temp_container(x.n_rows);
- arma::mat cholinv = chol(Sigma.i());
+ arma::mat cholinv = chol(inv_sympd(Sigma));
  // Container for log density
  Rcpp::NumericVector logdens(newdata.n_rows);
  double logcst = -0.5*d*log(2*arma::datum::pi) + sum(log(cholinv.diag())) - lognx;
@@ -162,7 +162,7 @@ Rcpp::NumericVector gauss_kdens_arma(arma::mat x, arma::mat newdata, arma::mat S
 //' @keywords internal
 // [[Rcpp::export]]
 arma::colvec mig_loo(arma::mat x, arma::mat Omega, arma::colvec beta) {
- arma::mat cholinv = chol(Omega.i());
+ arma::mat cholinv = chol(inv_sympd(Omega));
  arma::uword d = x.n_cols;
  arma::uword n = x.n_rows;
  if(n < 2){
@@ -230,7 +230,7 @@ arma::colvec mig_loo(arma::mat x, arma::mat Omega, arma::colvec beta) {
 // [[Rcpp::export]]
 double mig_rlcv(arma::mat x, arma::colvec beta, arma::mat Omega, double an,
                arma::mat xsamp, arma::vec dxsamp, bool mckern = true) {
- arma::mat cholinv = chol(Omega.i());
+ arma::mat cholinv = chol(inv_sympd(Omega));
  arma::uword d = x.n_cols;
  arma::uword n = x.n_rows;
  if(n < 2){
@@ -329,7 +329,7 @@ double mig_rlcv(arma::mat x, arma::colvec beta, arma::mat Omega, double an,
 // [[Rcpp::export]]
 double mig_lscv(arma::mat x, arma::colvec beta, arma::mat Omega,
                arma::mat xsamp, arma::vec dxsamp, bool mckern = true) {
- arma::mat cholinv = chol(Omega.i());
+ arma::mat cholinv = chol(inv_sympd(Omega));
  arma::uword d = x.n_cols;
  arma::uword n = x.n_rows;
  if(n < 2){
@@ -415,7 +415,7 @@ double mig_lscv(arma::mat x, arma::colvec beta, arma::mat Omega,
 //' @export
 // [[Rcpp::export]]
 arma::colvec gauss_loo(arma::mat x, arma::mat Sigma, arma::vec logweights) {
- arma::mat cholinv = chol(Sigma.i());
+ arma::mat cholinv = chol(inv_sympd(Sigma));
  arma::uword d = x.n_cols;
  arma::uword n = x.n_rows;
  if(n < 2){
@@ -476,7 +476,7 @@ arma::colvec gauss_loo(arma::mat x, arma::mat Sigma, arma::vec logweights) {
 //' @export
 // [[Rcpp::export]]
 arma::colvec tnorm_loo(arma::mat x, arma::mat Omega, arma::vec beta) {
-    arma::mat cholinv = chol(Omega.i());
+    arma::mat cholinv = chol(inv_sympd(Omega));
     arma::uword d = x.n_cols;
     arma::uword n = x.n_rows;
     if(n < 2){

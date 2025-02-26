@@ -18,7 +18,6 @@
 #' @param N integer number of simulations for Monte Carlo integration
 #' @param approx string; distribution to approximate the true density function \eqn{f(x)}; either \code{kernel} for the kernel estimator evaluated at the sample points (except for \code{method="amise"}, which isn't supported),  \code{mig} for multivariate inverse Gaussian with the method of moments or \code{tnorm} for the multivariate truncated Gaussian evaluated by maximum likelihood.
 #' @param transformation string for optional scaling of the data before computing the bandwidth. Either standardization to unit variance \code{scaling}, spherical transformation to unit variance and zero correlation (\code{spherical}), or \code{none} (default).
-#' @param pointwise if \code{NULL}, evaluates the mean integrated squared error, otherwise a \code{d} vector to evaluate the bandwidth or scale pointwise
 #' @param maxiter integer; max number of iterations in the call to \code{optim}.
 #' @param buffer double indicating the buffer from the half-space
 #' @param ... additional parameters, currently ignored
@@ -39,7 +38,6 @@ kdens_bandwidth <- function(
       transformation = c("none", "scaling", "spherical"),
       N = 1e4L,
       buffer = 0,
-      pointwise = NULL,
       maxiter = 2e3L,
       ...){
    maxiter <- max(as.integer(maxiter), 1e4L, na.rm = TRUE)
@@ -65,8 +63,7 @@ kdens_bandwidth <- function(
          approx = approx,
          transformation = 'none',
          N = N,
-         buffer = buffer,
-         pointwise = pointwise)
+         buffer = buffer)
       return(t(Tm)%*% bw %*% Tm)
    }
    buffer <- pmax(buffer[1], 0)
@@ -108,31 +105,23 @@ kdens_bandwidth <- function(
       start <- log(n^(-1/(d+2)) * diag(cov(x)))
    }
    if(method == "amise"){
+      if(!approx %in% c("mig","tnorm")){
+       stop("Only \"mig\" and \"tnorm\" approximations are supported for the mean integrated squared error calculation.")
+      }
       if(family != "mig"){
        stop("Invalid option for the chosen \"family\".")
       }
       # Compute moment estimator
       if(approx == "mig"){
          estim <- .mig_mom(x = x, beta = beta)
-      } else { # if approximation is Gaussian or truncated Gaussian
+         # Simulate observations from MLE to get Monte Carlo sample
+         # to approximate the integral of the MISE
+         samp <- rmig(n = N, xi = estim$xi,
+                      Omega = estim$Omega, beta = beta)
+      } else if(approx == "tnorm") { # if approximation is Gaussian or truncated Gaussian
          estim <- mle_truncgauss(x = x, beta = beta)
-      }
-      # Simulate observations from MLE to get Monte Carlo sample
-      # to approximate the integral of the MISE
-      if(!is.null(pointwise)){
-         stopifnot(length(pointwise) == d)
-         samp <- matrix(pointwise, ncol = d)
-      } else{
-         if(approx == "mig"){
-           samp <- rmig(n = N, xi = estim$xi,
-                        Omega = estim$Omega, beta = beta)
-         } else if(approx == "tnorm"){
-           samp <- rtellipt(n = N, beta = beta, mu = estim$loc,
-                            sigma = estim$scale, delta = buffer)
-         } else{
-           # approx must be 'kernel'
-         stop("Invalid method") # this should not get executed
-         }
+         samp <- rtellipt(n = N, beta = beta, mu = estim$loc,
+                          sigma = estim$scale, delta = buffer)
       }
       xbeta <- c(samp %*% beta)
       logxbeta <- log(xbeta)
@@ -145,30 +134,30 @@ kdens_bandwidth <- function(
             hopt <-  (d / n * int1 /
             mean(xbeta^2 * dmig_laplacian(x = samp, xi = estim$xi, Omega = estim$Omega, beta = beta, scale = FALSE)^2 *
                 dmig(x = samp,  xi = estim$xi, Omega = estim$Omega, beta = beta, log = FALSE)))^(1/(d+4))
-         } else{
+         } else if(approx == "tnorm"){
             hopt <-  (d / n * int1 /
                          mean(xbeta^2 * dtnorm_laplacian(
-                            x = samp, mu = estim$mu, sigma = estim$sigma, beta = beta, delta = buffer, scale = FALSE)^2 *
-                                 dtellipt(x = samp,  mu = estim$mu, sigma = estim$sigma, beta = beta, delta = buffer, log = FALSE)))^(1/(d+4))
+                            x = samp, mu = estim$loc, sigma = estim$scale, beta = beta, delta = buffer, scale = FALSE)^2 *
+                                 dtellipt(x = samp,  mu = estim$loc, sigma = estim$scale, beta = beta, delta = buffer, log = FALSE)))^(1/(d+4))
          }
       return(diag(rep(hopt, d)))
       } else {
           if(approx == "mig"){
          gradients <- mig_loglik_grad(x = samp, beta = beta, xi = estim$xi, Omega = estim$Omega)
          hessians <- mig_loglik_hessian(x = samp, beta = beta, xi = estim$xi, Omega = estim$Omega)
-         logdens <- dmig(x = samp, xi = estim$xi, Omega = estim$Omega, beta = beta, log = TRUE)
          for(i in seq_len(nrow(gradients))){
             hessians[i,,] <- hessians[i,,] + tcrossprod(gradients[i,])
          }
-         } else{
-            Q <- solve(estim$sigma)
-            gradients <- mvnorm_loglik_grad(x = samp, mu = estim$mu, Q = Q)
+         logdens <- dmig(x = samp, xi = estim$xi, Omega = estim$Omega, beta = beta, log = TRUE)
+         } else if(approx == "tnorm"){
+            Q <- solve(estim$scale)
+            gradients <- mvnorm_loglik_grad(x = samp, mu = estim$loc, Q = Q)
             hessian <- mvnorm_loglik_hessian(Q = Q)
             hessians <- array(dim = c(dim(gradients), d))
             for(i in seq_len(nrow(gradients))){
               hessians[i,,] <- hessian + tcrossprod(gradients[i,])
             }
-            logdens <- dtellipt(x = samp, beta = beta, mu = estim$mu, sigma = estim$sigma, delta = buffer, log = TRUE)
+            logdens <- dtellipt(x = samp, beta = beta, mu = estim$loc, sigma = estim$scale, delta = buffer, log = TRUE)
          }
          logscalefact <- logdens + 2*logxbeta
          if(type == "full"){
@@ -199,7 +188,7 @@ kdens_bandwidth <- function(
        }
          if(type == "full"){
             return(chol2cov(optH$par, d = d))
-         } else{
+         } else if(type == "diag"){
             return(diag(exp(optH$par)))
          }
       }
@@ -282,7 +271,7 @@ kdens_bandwidth <- function(
               Hmat <- diag(exp(pars))
             }
             if(family == "mig"){
-               - mig_rlcv(x = x, beta = beta, Omega = Hmat, xsamp = xsamp, an = a,
+               - mig2_rlcv(x = x, beta = beta, Omega = Hmat, xsamp = xsamp, an = a,
                               dxsamp = dxsamp, mckern = mckern)
             } else if(family == "tnorm"){
                - tnorm_rlcv(x = x, Omega = Hmat, beta = beta, an = a,
@@ -314,7 +303,7 @@ kdens_bandwidth <- function(
             #               Omega = Hmat, beta = beta, log = TRUE))
             # }) - log(n-1))) - bias
             if(family == "mig"){
-              -mig2_lscv(x = x, beta = beta, Omega = Hmat, xsamp = xsamp,
+               -mig2_lscv(x = x, beta = beta, Omega = Hmat, xsamp = xsamp,
                              dxsamp = dxsamp, mckern = mckern)
             } else if(family == "tnorm"){
                -tnorm_lscv(x = x, beta = beta, Omega = Hmat, xsamp = xsamp,
