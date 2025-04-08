@@ -15,7 +15,6 @@ kdens_bandwidth(
   transformation = c("none", "scaling", "spherical"),
   N = 10000L,
   buffer = 0,
-  pointwise = NULL,
   maxiter = 2000L,
   ...
 )
@@ -40,8 +39,6 @@ kdens_bandwidth(
 \item{N}{integer number of simulations for Monte Carlo integration}
 
 \item{buffer}{double indicating the buffer from the half-space}
-
-\item{pointwise}{if \code{NULL}, evaluates the mean integrated squared error, otherwise a \code{d} vector to evaluate the bandwidth or scale pointwise}
 
 \item{maxiter}{integer; max number of iterations in the call to \code{optim}.}
 

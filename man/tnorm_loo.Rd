@@ -9,9 +9,9 @@ tnorm_loo(x, Omega, beta)
 \arguments{
 \item{x}{\code{n} by \code{d} matrix of observations}
 
-\item{beta}{vector of constraints for the half-space}
+\item{Omega}{smoothing positive-definite matrix}
 
-\item{Sigma}{smoothing positive-definite matrix}
+\item{beta}{vector of constraints for the half-space}
 }
 \value{
 a vector of values for the weighted leave-one-out likelihood

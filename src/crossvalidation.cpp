@@ -13,6 +13,7 @@
 //' @param newdata matrix of new observations at which to evaluated the kernel density
 //' @return the value of the likelihood cross-validation criterion
 //' @keywords internal
+//' @export
 // [[Rcpp::export]]
 Rcpp::NumericVector mig_kdens_arma(arma::mat x, arma::mat newdata, arma::mat Omega, arma::colvec beta, bool logd){
  arma::uword  n = newdata.n_rows;
@@ -63,6 +64,7 @@ Rcpp::NumericVector mig_kdens_arma(arma::mat x, arma::mat newdata, arma::mat Ome
 //' @param newdata matrix of new observations at which to evaluated the kernel density
 //' @return the value of the likelihood cross-validation criterion
 //' @keywords internal
+//' @export
 // [[Rcpp::export]]
 Rcpp::NumericVector tnorm_kdens_arma(arma::mat x, arma::mat newdata, arma::mat Omega, arma::colvec beta, bool logd){
  arma::uword  n = newdata.n_rows;
@@ -115,6 +117,7 @@ Rcpp::NumericVector tnorm_kdens_arma(arma::mat x, arma::mat newdata, arma::mat O
 //' @param Sigma covariance matrix
 //' @param logd logical; if \code{TRUE}, return the log density
 //' @return log density estimator
+//' @export
 //' @keywords internal
 // [[Rcpp::export]]
 Rcpp::NumericVector gauss_kdens_arma(arma::mat x, arma::mat newdata, arma::mat Sigma, arma::vec logweights, bool logd){
@@ -469,7 +472,7 @@ arma::colvec gauss_loo(arma::mat x, arma::mat Sigma, arma::vec logweights) {
 //' cross validation, taking in turn an observation as location vector
 //' and computing the density of the resulting mixture.
 //' @param x \code{n} by \code{d} matrix of observations
-//' @param Sigma smoothing positive-definite matrix
+//' @param Omega smoothing positive-definite matrix
 //' @param beta vector of constraints for the half-space
 //' @return a vector of values for the weighted leave-one-out likelihood
 //' @keywords internal

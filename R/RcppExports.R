@@ -19,6 +19,7 @@ NULL
 #' @param newdata matrix of new observations at which to evaluated the kernel density
 #' @return the value of the likelihood cross-validation criterion
 #' @keywords internal
+#' @export
 mig_kdens_arma <- function(x, newdata, Omega, beta, logd) {
     .Call(`_mig_mig_kdens_arma`, x, newdata, Omega, beta, logd)
 }
@@ -32,6 +33,7 @@ mig_kdens_arma <- function(x, newdata, Omega, beta, logd) {
 #' @param newdata matrix of new observations at which to evaluated the kernel density
 #' @return the value of the likelihood cross-validation criterion
 #' @keywords internal
+#' @export
 tnorm_kdens_arma <- function(x, newdata, Omega, beta, logd) {
     .Call(`_mig_tnorm_kdens_arma`, x, newdata, Omega, beta, logd)
 }
@@ -46,6 +48,7 @@ tnorm_kdens_arma <- function(x, newdata, Omega, beta, logd) {
 #' @param Sigma covariance matrix
 #' @param logd logical; if \code{TRUE}, return the log density
 #' @return log density estimator
+#' @export
 #' @keywords internal
 gauss_kdens_arma <- function(x, newdata, Sigma, logweights, logd) {
     .Call(`_mig_gauss_kdens_arma`, x, newdata, Sigma, logweights, logd)
@@ -116,7 +119,7 @@ gauss_loo <- function(x, Sigma, logweights) {
 #' cross validation, taking in turn an observation as location vector
 #' and computing the density of the resulting mixture.
 #' @param x \code{n} by \code{d} matrix of observations
-#' @param Sigma smoothing positive-definite matrix
+#' @param Omega smoothing positive-definite matrix
 #' @param beta vector of constraints for the half-space
 #' @return a vector of values for the weighted leave-one-out likelihood
 #' @keywords internal
